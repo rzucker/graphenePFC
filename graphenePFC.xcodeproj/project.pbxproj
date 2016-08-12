@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		CC05F7781D579B2F0029E196 /* matrix.cpp in Sources */ = {isa = PBXBuildFile; fileRef = CC05F7761D579B2F0029E196 /* matrix.cpp */; };
 		CCEFC26F1D302A0D00DA224E /* main.cpp in Sources */ = {isa = PBXBuildFile; fileRef = CCEFC26E1D302A0D00DA224E /* main.cpp */; };
 /* End PBXBuildFile section */
 
@@ -23,6 +24,8 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		CC05F7761D579B2F0029E196 /* matrix.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = matrix.cpp; path = graphenePFC/matrix.cpp; sourceTree = "<group>"; };
+		CC05F7771D579B2F0029E196 /* matrix.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = matrix.hpp; path = graphenePFC/matrix.hpp; sourceTree = "<group>"; };
 		CCEFC26B1D302A0D00DA224E /* graphenePFC */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = graphenePFC; sourceTree = BUILT_PRODUCTS_DIR; };
 		CCEFC26E1D302A0D00DA224E /* main.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = main.cpp; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -41,6 +44,8 @@
 		CCEFC2621D302A0D00DA224E = {
 			isa = PBXGroup;
 			children = (
+				CC05F7761D579B2F0029E196 /* matrix.cpp */,
+				CC05F7771D579B2F0029E196 /* matrix.hpp */,
 				CCEFC26D1D302A0D00DA224E /* graphenePFC */,
 				CCEFC26C1D302A0D00DA224E /* Products */,
 			);
@@ -118,6 +123,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				CC05F7781D579B2F0029E196 /* matrix.cpp in Sources */,
 				CCEFC26F1D302A0D00DA224E /* main.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -239,6 +245,7 @@
 				CCEFC2741D302A0D00DA224E /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
 	};
