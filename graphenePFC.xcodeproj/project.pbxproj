@@ -93,6 +93,9 @@
 		CCEFC2631D302A0D00DA224E /* Project object */ = {
 			isa = PBXProject;
 			attributes = {
+				KnownAssetTags = (
+					New,
+				);
 				LastUpgradeCheck = 0730;
 				ORGANIZATIONNAME = "Rachel Zucker";
 				TargetAttributes = {
@@ -215,6 +218,13 @@
 		CCEFC2731D302A0D00DA224E /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				"HEADER_SEARCH_PATHS[arch=*]" = /usr/local/include/;
+				"LIBRARY_SEARCH_PATHS[arch=*]" = /usr/local/lib/;
+				"OTHER_LDFLAGS[arch=*]" = (
+					"-lboost_system",
+					"-lfftw3",
+					"-lm",
+				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
 			name = Debug;
@@ -222,6 +232,13 @@
 		CCEFC2741D302A0D00DA224E /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				"HEADER_SEARCH_PATHS[arch=*]" = /usr/local/include/;
+				"LIBRARY_SEARCH_PATHS[arch=*]" = /usr/local/lib/;
+				"OTHER_LDFLAGS[arch=*]" = (
+					"-lboost_system",
+					"-lfftw3",
+					"-lm",
+				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
 			name = Release;

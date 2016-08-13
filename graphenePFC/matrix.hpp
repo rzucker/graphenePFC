@@ -44,7 +44,7 @@ public:
             {
                 for ( i=0; i<3; ++i )
                 {
-                    cixy[i] = cmax[i] - (cmax[i] - cmin[i]) * (2./9.) * (3. - (2. * cos(2 * PI * ir / atomicSpacing) * cos(2. * PI * (ic - potentialShift) / (sqrt(3.) * atomicSpacing)) + cos(4. * PI * (ic - potentialShift) / (sqrt(3.) * atomicSpacing)) ));
+                    cixy[i] = cmax[i] - (cmax[i] - cmin[i]) * (2./9.) * (3. - (2. * cos(2 * PI * ic / atomicSpacing) * cos(2. * PI * (ir - potentialShift) / (sqrt(3.) * atomicSpacing)) + cos(4. * PI * (ir - potentialShift) / (sqrt(3.) * atomicSpacing)) ));
                 }
                 _storage[ir*C + ic] = potentialAmplitude * (((cixy[0] * exp(-zEq * cixy[1]) - cixy[2] / (zEq*zEq*zEq*zEq)) - minPotential) / (maxPotential - minPotential) - 0.5);
             }
@@ -83,7 +83,7 @@ public:
             file << _storage[((R-1) * C) + C-1] << "}" << std::endl;
             file << "}";
             file.close();
-            std::cout << "done writing matrix to file" << std::endl;
+            std::cout << "done writing " << fileName << std::endl;
         }
         else std::cout << "Unable to open file" << std::endl;
     }
