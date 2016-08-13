@@ -16,16 +16,21 @@
 #include <fftw3.h>
 
 #define PI 3.141592653589793
-#define NR 128
-#define NC 128
+
+#define NR 512
+#define NC 512
+#define MU 0.0
+#define SCALEUP 3.57791754018
+#define DT 0.1
 
 int main(int argc, const char * argv[]) {
     // define length scales
-    double scaleUp, r0, a0;
-    scaleUp = 3.57791754018;
-    r0 = scaleUp * 2.12;
-    a0 = scaleUp * 1.7321;
-    double externalPotentialAmplitude = 1.0;
+    double r0, a0;
+    r0 = SCALEUP * 2.12;
+    a0 = SCALEUP * 1.7321;
+    double externalPotentialAmplitude = -1.0;
+    int writeThisOften = 50;
+    double maxTime = 20.;
     
     // define appled potential
     Matrix<NR, NC> appliedPotential (r0, externalPotentialAmplitude, 0.0, 1.0);
@@ -150,7 +155,7 @@ int main(int argc, const char * argv[]) {
     // outside the time loop: allocation, plans
     
     double rescaleFFTs = 1.0 / sqrt(NR * NC * 1.0);
-    double tmp1r, tmp2r;
+    double tmp1r, tmp2r, dt;
     fftw_complex *n_hat, *dfdn2;
     // allocate input 2d array to be FFT'd, will be overwritten
     n_hat = (fftw_complex*) fftw_malloc(sizeof(fftw_complex) * NR * NC);
@@ -182,118 +187,175 @@ int main(int argc, const char * argv[]) {
     Matrix<NR, NC> dFdN1 (0.0);
     Matrix<NR, NC> dFdN2 (0.0);
     Matrix<NR, NC> dFdN3 (0.0);
+    Matrix<NR, NC> dndt (0.0);
     // create time variable
-    // double time = 0.0;
+    double time = 0.0;
+    int iteration = 0;
+    std::string timeStr;
+    std::string fileStr;
+    const char* timeChar;
+    const char* fileChar;
     
     
     // begin time iteration
-    
-    // make dFdN1
-    for(int ir = 0; ir < NR; ++ir) {
-        for(int ic = 0; ic < NC; ++ic) {
-            tmp = n_mat.get(ir, ic);
-            dFdN1.set(ir, ic, tmp - (0.5 * tmp * tmp) + (0.33333333333 * tmp * tmp *tmp));
+    for (; time < maxTime; ++iteration) {
+        if (iteration % writeThisOften == 0) {
+            timeStr = "the time is " + boost::lexical_cast<std::string>(time);
+            fileStr = "/Users/Rachel/Documents/graphenePFC/" + boost::lexical_cast<std::string>(iteration) + ".txt";
+            timeChar = timeStr.c_str();
+            fileChar = fileStr.c_str();
+            n_mat.writeToFile(fileChar, timeChar);
         }
-    }
+        
+        // make dFdN1
+        for(int ir = 0; ir < NR; ++ir) {
+            for(int ic = 0; ic < NC; ++ic) {
+                tmp = n_mat.get(ir, ic);
+                dFdN1.set(ir, ic, tmp - (0.5 * tmp * tmp) + (0.33333333333 * tmp * tmp * tmp));
+            }
+        }
+        // dFdN1.writeToFile("/Users/Rachel/Documents/graphenePFC/dfdn1.txt", "dfdn1");
+        
+        // define n_hat using current n_mat value
+        for(int ir = 0; ir < NR; ++ir) {
+            for(int ic = 0; ic < NC; ++ic) {
+                n_hat[ir * NC + ic][0] = n_mat.get(ir, ic);
+                n_hat[ir * NC + ic][1] = 0.0;
+            }
+        }
+        fftw_execute(makeNHat);
+        
+        // define dfdn2 using current n_hat value
+        for(int ir = 0; ir < NR; ++ir) {
+            for(int ic = 0; ic < NC; ++ic) {
+                tmp = c2hat.get(ir, ic);
+                dfdn2[ir * NC + ic][0] = rescaleFFTs * n_hat[ir * NC + ic][0] * tmp;
+                dfdn2[ir * NC + ic][1] = rescaleFFTs * n_hat[ir * NC + ic][1] * tmp;
+            }
+        }
+        fftw_execute(makeDfdn2);
+        // make dFdN2
+        for(int ir = 0; ir < NR; ++ir) {
+            for(int ic = 0; ic < NC; ++ic) {
+                dFdN2.set(ir, ic, -1.0 * rescaleFFTs * dfdn2[ir * NC + ic][0]);
+            }
+        }
+        // dFdN2.writeToFile("/Users/Rachel/Documents/graphenePFC/dfdn2.txt", "dfdn2");
 
-    // define n_hat using current n_mat value
-    for(int ir = 0; ir < NR; ++ir) {
-        for(int ic = 0; ic < NC; ++ic) {
-            n_hat[ir * NC + ic][0] = n_mat.get(ir, ic);
-            n_hat[ir * NC + ic][1] = 0.0;
+        
+        // define IFFT[ Cs1 nhat]
+        // (a + b i)(d i) = (-b d) + (a d) i
+        for(int ir = 0; ir < NR; ++ir) {
+            for(int ic = 0; ic < NC; ++ic) {
+                tmp = cs1hat.get(ir, ic);
+                cs1n[ir * NC + ic][0] = -1.0 * rescaleFFTs * n_hat[ir * NC + ic][1] * tmp;
+                cs1n[ir * NC + ic][1] = rescaleFFTs * n_hat[ir * NC + ic][0] * tmp;
+            }
         }
-    }
-    fftw_execute(makeNHat);
-    
-    // define dfdn2 using current n_hat value
-    for(int ir = 0; ir < NR; ++ir) {
-        for(int ic = 0; ic < NC; ++ic) {
-            tmp = c2hat.get(ir, ic);
-            dfdn2[ir * NC + ic][0] = rescaleFFTs * n_hat[ir * NC + ic][0] * tmp;
-            dfdn2[ir * NC + ic][1] = rescaleFFTs * n_hat[ir * NC + ic][1] * tmp;
+        // define IFFT[ Cs2 nhat]
+        for(int ir = 0; ir < NR; ++ir) {
+            for(int ic = 0; ic < NC; ++ic) {
+                tmp = cs2hat.get(ir, ic);
+                cs2n[ir * NC + ic][0] = -1.0 * rescaleFFTs * n_hat[ir * NC + ic][1] * tmp;
+                cs2n[ir * NC + ic][1] = rescaleFFTs * n_hat[ir * NC + ic][0] * tmp;
+            }
         }
-    }
-    fftw_execute(makeDfdn2);
-    // make dFdN2
-    for(int ir = 0; ir < NR; ++ir) {
-        for(int ic = 0; ic < NC; ++ic) {
-            dFdN2.set(ir, ic, -1.0 * dfdn2[ir * NC + ic][0]);
+        fftw_execute(makecs1n);
+        fftw_execute(makecs2n);
+        
+        // define FFT[ n IFFT[Cs1 nhat]]
+        // define FFT[ n IFFT[Cs2 nhat]]
+        // (a)(c + d i) = (a c) + (a d) i
+        for(int ir = 0; ir < NR; ++ir) {
+            for(int ic = 0; ic < NC; ++ic) {
+                tmp = n_mat.get(ir, ic);
+                ncs1n[ir * NC + ic][0] = rescaleFFTs * cs1n[ir * NC + ic][0] * tmp;
+                ncs1n[ir * NC + ic][1] = rescaleFFTs * cs1n[ir * NC + ic][1] * tmp;
+                ncs2n[ir * NC + ic][0] = rescaleFFTs * cs2n[ir * NC + ic][0] * tmp;
+                ncs2n[ir * NC + ic][1] = rescaleFFTs * cs2n[ir * NC + ic][1] * tmp;
+            }
         }
-    }
-    
-    // define IFFT[ Cs1 nhat]
-    // (a + b i)(d i) = (-b d) + (a d) i
-    for(int ir = 0; ir < NR; ++ir) {
-        for(int ic = 0; ic < NC; ++ic) {
-            tmp = cs1hat.get(ir, ic);
-            cs1n[ir * NC + ic][0] = -1.0 * rescaleFFTs * n_hat[ir * NC + ic][1] * tmp;
-            cs1n[ir * NC + ic][1] = rescaleFFTs * n_hat[ir * NC + ic][0] * tmp;
+        fftw_execute(makencs1n);
+        fftw_execute(makencs2n);
+        
+        // define IFFT[ Cs1 FFT[ n IFFT[ Cs1 nhat]]]
+        // (a + b i)(d i) = (-b d) + (a d) i
+        for(int ir = 0; ir < NR; ++ir) {
+            for(int ic = 0; ic < NC; ++ic) {
+                tmp = cs1hat.get(ir, ic);
+                cs1ncs1n[ir * NC + ic][0] = -1.0 * rescaleFFTs * ncs1n[ir * NC + ic][1] * tmp;
+                cs1ncs1n[ir * NC + ic][1] = rescaleFFTs * ncs1n[ir * NC + ic][0] * tmp;
+            }
         }
-    }
-    // define IFFT[ Cs2 nhat]
-    for(int ir = 0; ir < NR; ++ir) {
-        for(int ic = 0; ic < NC; ++ic) {
-            tmp = cs2hat.get(ir, ic);
-            cs2n[ir * NC + ic][0] = -1.0 * rescaleFFTs * n_hat[ir * NC + ic][1] * tmp;
-            cs2n[ir * NC + ic][1] = rescaleFFTs * n_hat[ir * NC + ic][0] * tmp;
+        // define IFFT[ Cs2 FFT[ n IFFT[ Cs2 nhat]]]
+        for(int ir = 0; ir < NR; ++ir) {
+            for(int ic = 0; ic < NC; ++ic) {
+                tmp = cs2hat.get(ir, ic);
+                cs2ncs2n[ir * NC + ic][0] = -1.0 * rescaleFFTs * ncs2n[ir * NC + ic][1] * tmp;
+                cs2ncs2n[ir * NC + ic][1] = rescaleFFTs * ncs2n[ir * NC + ic][0] * tmp;
+            }
         }
-    }
-    fftw_execute(makecs1n);
-    fftw_execute(makecs2n);
-    
-    // define FFT[ n IFFT[Cs1 nhat]]
-    // define FFT[ n IFFT[Cs2 nhat]]
-    // (a)(c + d i) = (a c) + (a d) i
-    for(int ir = 0; ir < NR; ++ir) {
-        for(int ic = 0; ic < NC; ++ic) {
-            tmp = n_mat.get(ir, ic);
-            ncs1n[ir * NC + ic][0] = rescaleFFTs * cs1n[ir * NC + ic][0] * tmp;
-            ncs1n[ir * NC + ic][1] = rescaleFFTs * cs1n[ir * NC + ic][1] * tmp;
-            ncs2n[ir * NC + ic][0] = rescaleFFTs * cs2n[ir * NC + ic][0] * tmp;
-            ncs2n[ir * NC + ic][1] = rescaleFFTs * cs2n[ir * NC + ic][1] * tmp;
+        fftw_execute(makecs1ncs1n);
+        fftw_execute(makecs2ncs2n);
+        
+        // make dFdN3
+        for(int ir = 0; ir < NR; ++ir) {
+            for(int ic = 0; ic < NC; ++ic) {
+                tmp1r = (cs1n[ir * NC + ic][0] * cs1n[ir * NC + ic][0]) - (cs1n[ir * NC + ic][1] * cs1n[ir * NC + ic][1]);
+                tmp2r = (cs2n[ir * NC + ic][0] * cs2n[ir * NC + ic][0]) - (cs2n[ir * NC + ic][1] * cs2n[ir * NC + ic][1]);
+                tmp = rescaleFFTs * rescaleFFTs * (tmp1r + tmp2r) - 2.0 * rescaleFFTs * cs1ncs1n[ir * NC + ic][0] - 2.0 * rescaleFFTs * cs2ncs2n[ir * NC + ic][0];
+                dFdN3.set(ir, ic, tmp);
+            }
         }
-    }
-    fftw_execute(makencs1n);
-    fftw_execute(makencs2n);
-    
-    // define IFFT[ Cs1 FFT[ n IFFT[ Cs1 nhat]]]
-    // (a + b i)(d i) = (-b d) + (a d) i
-    for(int ir = 0; ir < NR; ++ir) {
-        for(int ic = 0; ic < NC; ++ic) {
-            tmp = cs1hat.get(ir, ic);
-            cs1ncs1n[ir * NC + ic][0] = -1.0 * rescaleFFTs * ncs1n[ir * NC + ic][1] * tmp;
-            cs1ncs1n[ir * NC + ic][1] = rescaleFFTs * ncs1n[ir * NC + ic][0] * tmp;
+        
+        // dFdN3.writeToFile("/Users/Rachel/Documents/graphenePFC/dfdn3.txt", "dfdn3");
+        
+        // define dndt
+        for(int ir = 0; ir < NR; ++ir) {
+            for(int ic = 0; ic < NC; ++ic) {
+                tmp = -(dFdN1.get(ir, ic) + dFdN2.get(ir, ic) - 0.33333333333 * dFdN3.get(ir, ic));
+                dndt.set(ir, ic, tmp + MU + appliedPotential.get(ir, ic));
+            }
         }
-    }
-    // define IFFT[ Cs2 FFT[ n IFFT[ Cs2 nhat]]]
-    for(int ir = 0; ir < NR; ++ir) {
-        for(int ic = 0; ic < NC; ++ic) {
-            tmp = cs2hat.get(ir, ic);
-            cs2ncs2n[ir * NC + ic][0] = -1.0 * rescaleFFTs * ncs2n[ir * NC + ic][1] * tmp;
-            cs2ncs2n[ir * NC + ic][1] = rescaleFFTs * ncs2n[ir * NC + ic][0] * tmp;
+        // dndt.writeToFile("/Users/Rachel/Documents/graphenePFC/dndt.txt", "dndt");
+
+        
+        // find dt
+        dt = DT / dndt.maxAbsValue();
+        // update n_mat
+        for(int ir = 0; ir < NR; ++ir) {
+            for(int ic = 0; ic < NC; ++ic) {
+                tmp = n_mat.get(ir, ic);
+                n_mat.set(ir, ic, tmp + dt * dndt.get(ir, ic));
+            }
         }
+        // update time
+        time += dt;
     }
-    fftw_execute(makecs1ncs1n);
-    fftw_execute(makecs2ncs2n);
-    
-    // make dFdN3
-    for(int ir = 0; ir < NR; ++ir) {
-        for(int ic = 0; ic < NC; ++ic) {
-            tmp1r = (cs1n[ir * NC + ic][0] * cs1n[ir * NC + ic][0]) - (cs1n[ir * NC + ic][1] * cs1n[ir * NC + ic][1]);
-            tmp2r = (cs2n[ir * NC + ic][0] * cs2n[ir * NC + ic][0]) - (cs2n[ir * NC + ic][1] * cs2n[ir * NC + ic][1]);
-            tmp = rescaleFFTs * rescaleFFTs * (tmp1r + tmp2r) - 2.0 * rescaleFFTs * cs1ncs1n[ir * NC + ic][0] - 2.0 * rescaleFFTs * cs2ncs2n[ir * NC + ic][0];
-            dFdN3.set(ir, ic, tmp);
-        }
-    }
-    
-    dFdN3.writeToFile("/Users/Rachel/Documents/graphenePFC/dfdn3.txt");
-    
     // end time iteration
     
     fftw_destroy_plan(makeNHat);
     fftw_destroy_plan(makeDfdn2);
+    fftw_destroy_plan(makecs1n);
+    fftw_destroy_plan(makecs2n);
+    fftw_destroy_plan(makencs1n);
+    fftw_destroy_plan(makencs2n);
+    fftw_destroy_plan(makecs1ncs1n);
+    fftw_destroy_plan(makecs2ncs2n);
     fftw_free(n_hat);
     fftw_free(dfdn2);
+    fftw_free(cs1n);
+    fftw_free(cs2n);
+    fftw_free(ncs1n);
+    fftw_free(ncs2n);
+    fftw_free(cs1ncs1n);
+    fftw_free(cs2ncs2n);
+    
+    timeStr = "the time is " + boost::lexical_cast<std::string>(time);
+    fileStr = "/Users/Rachel/Documents/graphenePFC/" + boost::lexical_cast<std::string>(iteration) + ".txt";
+    timeChar = timeStr.c_str();
+    fileChar = fileStr.c_str();
+    n_mat.writeToFile(fileChar, timeChar);
     
     return 0;
 }

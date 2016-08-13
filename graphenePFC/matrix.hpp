@@ -61,10 +61,11 @@ public:
         return _storage[ir * C + ic];
     }
     
-    void writeToFile (const char* fileName) const {
+    void writeToFile (const char* fileName, const char* header) const {
         std::ofstream file (fileName);
         if (file.is_open())
         {
+            file << header << std:: endl;
             file << "{";
             for (int ir=0; ir<R-1; ++ir )
             {
@@ -86,6 +87,16 @@ public:
             std::cout << "done writing " << fileName << std::endl;
         }
         else std::cout << "Unable to open file" << std::endl;
+    }
+    
+    double maxAbsValue () const {
+        double maxSoFar = 0.0;
+        for ( int i = 0; i < R * C; ++i) {
+            if (fabs(_storage[i]) > maxSoFar) {
+                maxSoFar = fabs(_storage[i]);
+            }
+        }
+        return maxSoFar;
     }
     
 private:
