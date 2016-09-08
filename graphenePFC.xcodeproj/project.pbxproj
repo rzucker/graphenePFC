@@ -7,8 +7,11 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		CC05F7781D579B2F0029E196 /* matrix.cpp in Sources */ = {isa = PBXBuildFile; fileRef = CC05F7761D579B2F0029E196 /* matrix.cpp */; };
-		CCEFC26F1D302A0D00DA224E /* main.cpp in Sources */ = {isa = PBXBuildFile; fileRef = CCEFC26E1D302A0D00DA224E /* main.cpp */; };
+		CC13E6871D80AF8000C8656E /* analyze_coupled_layers_with_burger.cpp in Sources */ = {isa = PBXBuildFile; fileRef = CC13E6851D80AF8000C8656E /* analyze_coupled_layers_with_burger.cpp */; };
+		CC5403E61D625D8D00C49D9F /* graphene_functions.cpp in Sources */ = {isa = PBXBuildFile; fileRef = CC5403E41D625D8D00C49D9F /* graphene_functions.cpp */; };
+		CC5403E91D626FCE00C49D9F /* postprocessing.cpp in Sources */ = {isa = PBXBuildFile; fileRef = CC5403E71D626FCE00C49D9F /* postprocessing.cpp */; };
+		CCCC9E2B1D78E0C8006290C9 /* analyze_coupled_layers.cpp in Sources */ = {isa = PBXBuildFile; fileRef = CCCC9E291D78E0C8006290C9 /* analyze_coupled_layers.cpp */; };
+		CCEFC26F1D302A0D00DA224E /* graphene.cpp in Sources */ = {isa = PBXBuildFile; fileRef = CCEFC26E1D302A0D00DA224E /* graphene.cpp */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -24,10 +27,18 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
-		CC05F7761D579B2F0029E196 /* matrix.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = matrix.cpp; path = graphenePFC/matrix.cpp; sourceTree = "<group>"; };
 		CC05F7771D579B2F0029E196 /* matrix.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = matrix.hpp; path = graphenePFC/matrix.hpp; sourceTree = "<group>"; };
+		CC13E6851D80AF8000C8656E /* analyze_coupled_layers_with_burger.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = analyze_coupled_layers_with_burger.cpp; sourceTree = "<group>"; };
+		CC13E6861D80AF8000C8656E /* analyze_coupled_layers_with_burger.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = analyze_coupled_layers_with_burger.hpp; sourceTree = "<group>"; };
+		CC5403E41D625D8D00C49D9F /* graphene_functions.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = graphene_functions.cpp; sourceTree = "<group>"; };
+		CC5403E51D625D8D00C49D9F /* graphene_functions.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = graphene_functions.hpp; sourceTree = "<group>"; };
+		CC5403E71D626FCE00C49D9F /* postprocessing.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = postprocessing.cpp; sourceTree = "<group>"; };
+		CC5403E81D626FCE00C49D9F /* postprocessing.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = postprocessing.hpp; sourceTree = "<group>"; };
+		CC5403EF1D66709D00C49D9F /* matrix_types.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = matrix_types.hpp; sourceTree = "<group>"; };
+		CCCC9E291D78E0C8006290C9 /* analyze_coupled_layers.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = analyze_coupled_layers.cpp; sourceTree = "<group>"; };
+		CCCC9E2A1D78E0C8006290C9 /* analyze_coupled_layers.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = analyze_coupled_layers.hpp; sourceTree = "<group>"; };
 		CCEFC26B1D302A0D00DA224E /* graphenePFC */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = graphenePFC; sourceTree = BUILT_PRODUCTS_DIR; };
-		CCEFC26E1D302A0D00DA224E /* main.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = main.cpp; sourceTree = "<group>"; };
+		CCEFC26E1D302A0D00DA224E /* graphene.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = graphene.cpp; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -44,7 +55,6 @@
 		CCEFC2621D302A0D00DA224E = {
 			isa = PBXGroup;
 			children = (
-				CC05F7761D579B2F0029E196 /* matrix.cpp */,
 				CC05F7771D579B2F0029E196 /* matrix.hpp */,
 				CCEFC26D1D302A0D00DA224E /* graphenePFC */,
 				CCEFC26C1D302A0D00DA224E /* Products */,
@@ -62,7 +72,16 @@
 		CCEFC26D1D302A0D00DA224E /* graphenePFC */ = {
 			isa = PBXGroup;
 			children = (
-				CCEFC26E1D302A0D00DA224E /* main.cpp */,
+				CCEFC26E1D302A0D00DA224E /* graphene.cpp */,
+				CC5403EF1D66709D00C49D9F /* matrix_types.hpp */,
+				CC5403E71D626FCE00C49D9F /* postprocessing.cpp */,
+				CC5403E81D626FCE00C49D9F /* postprocessing.hpp */,
+				CCCC9E291D78E0C8006290C9 /* analyze_coupled_layers.cpp */,
+				CCCC9E2A1D78E0C8006290C9 /* analyze_coupled_layers.hpp */,
+				CC13E6851D80AF8000C8656E /* analyze_coupled_layers_with_burger.cpp */,
+				CC13E6861D80AF8000C8656E /* analyze_coupled_layers_with_burger.hpp */,
+				CC5403E41D625D8D00C49D9F /* graphene_functions.cpp */,
+				CC5403E51D625D8D00C49D9F /* graphene_functions.hpp */,
 			);
 			path = graphenePFC;
 			sourceTree = "<group>";
@@ -126,8 +145,11 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				CC05F7781D579B2F0029E196 /* matrix.cpp in Sources */,
-				CCEFC26F1D302A0D00DA224E /* main.cpp in Sources */,
+				CC5403E61D625D8D00C49D9F /* graphene_functions.cpp in Sources */,
+				CCCC9E2B1D78E0C8006290C9 /* analyze_coupled_layers.cpp in Sources */,
+				CC13E6871D80AF8000C8656E /* analyze_coupled_layers_with_burger.cpp in Sources */,
+				CC5403E91D626FCE00C49D9F /* postprocessing.cpp in Sources */,
+				CCEFC26F1D302A0D00DA224E /* graphene.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
