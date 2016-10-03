@@ -11,6 +11,8 @@
 #include "postprocessing.hpp"
 #include "matrix_types.hpp"
 #include <boost/geometry.hpp>
+#include <omp.h>
+#include <ctime>
 
 struct FancyPoint {
    Point atom;
@@ -26,12 +28,11 @@ Point NearestPointVector(const Point point, const std::vector<Point>& possible_n
    for (int i = 0; i < length; ++i) {
       double tmp = sqrt( ((possible_neighbors.at(i).x - point.x) * (possible_neighbors.at(i).x - point.x)) + ((possible_neighbors.at(i).y - point.y) * (possible_neighbors.at(i).y - point.y)) );
       if ( tmp > 0.) {
-         all_data.push_back(ScalarAndId(i, tmp));
+         all_data.push_back(ScalarAndId(i, tmp, possible_neighbors.at(i).x, possible_neighbors.at(i).y));
       }
    }
    std::sort(all_data.begin(), all_data.end(), SortByScalar);
-   int index = all_data.at(0).id;
-   Point raw_result = Point(possible_neighbors.at(index).x - point.x, possible_neighbors.at(index).y - point.y);
+   Point raw_result = Point(all_data.at(0).x - point.x, all_data.at(0).y - point.y);
    double magnitude = sqrt( (raw_result.x * raw_result.x) + (raw_result.y * raw_result.y) );
    double angle = 0.;
    if(magnitude > 0){
@@ -42,7 +43,8 @@ Point NearestPointVector(const Point point, const std::vector<Point>& possible_n
 }
 
 void CoupledStackingBurger(const padded_matrix_t& hole_t, const padded_matrix_t& hole_b, const padded_matrix_t& up_t, const padded_matrix_t& up_b, const padded_matrix_t& down_t, const padded_matrix_t& down_b, std::vector<FancyPoint>* all_atom_data, const double r0) {
-   
+   #pragma omp parallel for private(ir, ic, neighbor_holes, neighbor_ups, neighbor_downs, center, aa, ab, ac), shared(all_atom_data)
+   {
    for (int ir = 0; ir < PAD(PAD(NR)); ++ir) {
       for (int ic = 0; ic < PAD(PAD(NC)); ++ic) {
          
@@ -100,6 +102,7 @@ void CoupledStackingBurger(const padded_matrix_t& hole_t, const padded_matrix_t&
          
       }
    }
+   }
 }
 
 void WriteCoupledBurger(const double time, const std::string directory_string, const std::vector<FancyPoint>& pcb) {
@@ -109,7 +112,7 @@ void WriteCoupledBurger(const double time, const std::string directory_string, c
    if (file.is_open()) {
       file << "{";
       for (auto& p : pcb) {
-         file << " {{" << p.atom.x << ", " << p.atom.y << "}, {" << p.abc[0] << ", " << p.abc[1] << ", " << p.abc[2] << "}, {" << p.burger.x << ", " << p.burger.y << "}}" << std::endl;
+         file << "{{" << p.atom.x << ", " << p.atom.y << "}, {" << p.abc[0] << ", " << p.abc[1] << ", " << p.abc[2] << "}, {" << p.burger.x << ", " << p.burger.y << "}}, " << std::endl;
       }
       file << " {} }";
       file.close();
@@ -119,8 +122,12 @@ void WriteCoupledBurger(const double time, const std::string directory_string, c
 }
 
 void AnalyzeCoupledBurger(const matrix_t& top, const matrix_t& bottom, const double r0, const double time, const std::string directory_string_t, const std::string directory_string_b) {
+   omp_get_max_threads();
    // pad the matrices
    padded_matrix_t pad_t, pad_b;
+   clock_t begin = clock();
+   #pragma omp parallel for private(ir, ic tmp_t, tmp_b) shared(top, bottom, pad_t, pad_b)
+   {
    for (int ir = 0; ir < PAD(PAD(NR)); ++ir) {
       for (int ic = 0; ic < PAD(PAD(NC)); ++ic) {
          double tmp_t = top.get( (ir - PAD(0) + NR) % NR, (ic - PAD(0) + NC) % NC);
@@ -129,7 +136,11 @@ void AnalyzeCoupledBurger(const matrix_t& top, const matrix_t& bottom, const dou
          pad_b.set(ir, ic, tmp_b);
       }
    }
+   }
+   clock_t end = clock();
+   double padding_secs = double(end - begin) / CLOCKS_PER_SEC;
    
+   begin = clock();
    // find local minima in pad by comparing with 8 nearest neighbor pixels
    const double global_max_t = top.MaxValue();
    const double global_max_b = bottom.MaxValue();
@@ -137,49 +148,69 @@ void AnalyzeCoupledBurger(const matrix_t& top, const matrix_t& bottom, const dou
    const double global_min_b = bottom.MinValue();
    const double max_minus_min_t = global_max_t - global_min_t;
    const double max_minus_min_b = global_max_b - global_min_b;
+   
    // write 1 in minima/maxima matrix entries, 0 otherwise
    padded_matrix_t hole_t, hole_b, atoms_t, atoms_b;
    FindExtrema(pad_t, &hole_t, &atoms_t, max_minus_min_t, global_min_t);
    FindExtrema(pad_b, &hole_b, &atoms_b, max_minus_min_b, global_min_b);
+   end = clock();
+   double find_extrema_secs = double(end - begin) / CLOCKS_PER_SEC;
    
+   begin = clock();
    // split the atoms matrices into up and down
    padded_matrix_t up_t, up_b, down_t, down_b;
    MakeUpDownMatrices(&up_t, &down_t, atoms_t, r0);
    MakeUpDownMatrices(&up_b, &down_b, atoms_b, r0);
+   end = clock();
+   double make_up_down_secs = double(end - begin) / CLOCKS_PER_SEC;
   
+   begin = clock();
    // find stacking
    padded_matrix_t aa_t, ab_t, ac_t, aa_b, ab_b, ac_b;
    std::vector<FancyPoint> atom_data_t, atom_data_b;
    CoupledStackingBurger(hole_t, hole_b, up_t, up_b, down_t, down_b, &atom_data_t, r0);
    CoupledStackingBurger(hole_b, hole_t, up_b, up_t, down_b, down_t, &atom_data_b, r0);
+   end = clock();
+   double coupled_stacking_secs = double(end - begin) / CLOCKS_PER_SEC;
    
+   begin = clock();
    // initialize a vector of polygons
    std::vector<Polygon> polygons_t, polygons_b;
-   int polygon_counter_t = 0;
-   int polygon_counter_b = 0;
    // populate it with white polygons centered on each hole
+   #pragma omp parallel for private(ir, ic) shared(hole_t, hole_b, polygons_t, polygons_b, polygon_conter_t, polygon_counter_b)
+   {
    for (int ir = 0; ir < PAD(PAD(NR)); ++ir) {
       for (int ic = 0; ic < PAD(PAD(NC)); ++ic) {
          if (hole_t.get(ir, ic) == 1.) {
             // initialize with sequential ID, color, and center point
-            polygons_t.push_back(Polygon(polygon_counter_t, {1., 1., 1.}, Point(ic, ir) ) );
-            polygon_counter_t += 1;
+            polygons_t.push_back(Polygon({1., 1., 1.}, Point(ic, ir) ) );
          }
          if (hole_b.get(ir, ic) == 1.) {
             // initialize with sequential ID, color, and center point
-            polygons_b.push_back(Polygon(polygon_counter_b, {1., 1., 1.}, Point(ic, ir) ) );
-            polygon_counter_b += 1;
+            polygons_b.push_back(Polygon({1., 1., 1.}, Point(ic, ir) ) );
          }
       }
    }
+   }
+   
    // find the nearby atoms composing the polygon
    MakePolygons(&polygons_t, atoms_t, r0);
    MakePolygons(&polygons_b, atoms_b, r0);
+   end = clock();
+   double make_polygons_secs = double(end - begin) / CLOCKS_PER_SEC;
    
+   begin = clock();
    WriteCoupledBurger(time, directory_string_t, atom_data_t);
    WriteCoupledBurger(time, directory_string_b, atom_data_b);
+   end = clock();
+   double burger_secs = double(end - begin) / CLOCKS_PER_SEC;
    
+   begin = clock();
    WritePolygonFile(time, directory_string_t, polygons_t);
    WritePolygonFile(time, directory_string_b, polygons_b);
+   end = clock();
+   double write_secs = double(end - begin) / CLOCKS_PER_SEC;
    
+   std::cout << "analysis times:" << std::endl;
+   std::cout << "paddding: " << padding_secs << ", find extrema: " << find_extrema_secs << ", make up & down matrices: " << make_up_down_secs << ", coupled stacking: " << coupled_stacking_secs << ", make polygons: " << make_polygons_secs << ", vectors: " << burger_secs << ", write: " << write_secs << std::endl;
 }

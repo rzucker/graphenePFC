@@ -19,6 +19,7 @@ void InitialSteepStripes(matrix_t* n_mat, const double r0);
 void InitialDiagonalStripes(matrix_t* n_mat, const double r0);
 void InitialVerticalStripes(matrix_t* n_mat, const double r0);
 void InitialHorizontalStripes(matrix_t* n_mat, const double r0);
+void InitialHorizontalDoubleStripes(matrix_t* n_mat, const double r0);
 // an inital condition to make a perfect "A" sheet
 void InitialAA(matrix_t* n_mat, const double r0);
 
@@ -35,6 +36,8 @@ void MakeCs(matrix_t* c2, matrix_t* cs1, matrix_t* cs2, matrix_t* minus_k_square
 
 // a function that writes a matrix to a file in the directory directoryString
 // with the first line "the time is (time)" and a filename of the iteration number
-void WriteMatrix(const double time, const int iteration, const std::string directory_string, const matrix_t& mat);
+void WriteMatrix(const double time, const double energy_val, const std::string directory_string, const matrix_t& mat);
+
+void AFMTip(matrix_t* total_potential, const double radius, const double speed, const double force, const double angle, const double time, const double delay, const matrix_t& fixed_potential);
 
 #endif /* graphene_functions_hpp */

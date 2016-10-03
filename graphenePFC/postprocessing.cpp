@@ -10,6 +10,7 @@
 #include "matrix_types.hpp"
 #include <cmath>
 #include <boost/geometry.hpp>
+#include <omp.h>
 
 #define PI 3.141592653589793
 
@@ -25,13 +26,17 @@ bool SortByScalar(const ScalarAndId& a, const ScalarAndId& b) {
 // populating matrix with 1's at the extrema, 0's elsewhere
 
 void FindExtrema(const padded_matrix_t& mat, padded_matrix_t* minima, padded_matrix_t* maxima, const double max_minus_min, const double global_min) {
+   #pragma omp parallel for private(ir, ic) shared(minima, maxima)
+   {
    for (int ir = 0; ir < PAD(PAD(NR)); ++ir) {
       for (int ic = 0; ic < PAD(PAD(NC)); ++ic) {
          (*minima).set(ir, ic, 0.0);
          (*maxima).set(ir, ic, 0.0);
       }
    }
-
+   }
+   #pragma omp parallel for private(ir, ic, neighbor_values, min, max) shared(mat, minima, maxima)
+   {
    for (int ir = 1; ir < PAD(PAD(NR)) - 1; ++ir) {
       for (int ic = 1; ic < PAD(PAD(NC)) - 1; ++ic) {
          
@@ -62,6 +67,7 @@ void FindExtrema(const padded_matrix_t& mat, padded_matrix_t* minima, padded_mat
          }
       }
    }
+   }
 }
 
 // this populates the 6 argument vectors with the coordinates of
@@ -90,6 +96,8 @@ void PotentialSites(const double r0, std::vector<Point>* hole, std::vector<Point
    // create vectors of site positions in the 3x3 grid of cells near the origin
    // unit cell
    int current_index = 0;
+   #pragma omp parallel for private(site, uc_row_index) shared(current_index, hole, up, down)
+   {
    for (int site = 0; site < 4; ++site) {
       for (int uc_row_index = -1; uc_row_index < 2; ++uc_row_index) {
          for (int uc_col_index = -1; uc_col_index < 2; ++uc_col_index) {
@@ -102,6 +110,7 @@ void PotentialSites(const double r0, std::vector<Point>* hole, std::vector<Point
             current_index += 1;
          }
       }
+   }
    }
 }
 
@@ -143,6 +152,8 @@ void FindStacking(const padded_matrix_t& minima, padded_matrix_t* color_red,
 
    // determine the stacking of a local minimum
    double sqrt3 = sqrt(3.0);
+   #pragma omp parallel for private(ir, ic, pt, nearest_hole_dist, nearest_up_dist, nearest_down_dist) shared(color_red, color_green, color_blue, minima)
+   {
    for (int ir = 0; ir < PAD(PAD(NR)); ++ir) {
       for (int ic = 0; ic < PAD(PAD(NC)); ++ic) {
          
@@ -164,11 +175,14 @@ void FindStacking(const padded_matrix_t& minima, padded_matrix_t* color_red,
          }
       }
    }
+   }
 }
 
 void MakePolygons(std::vector<Polygon>* all_image_polygons, const padded_matrix_t& maxima, const double r0) {
    
    // for each carbon ring, find the bounding atoms
+   #pragma omp parallel for private(poly, i, j, cx, cy, possible_ring_atoms, possible_ring_atom_duals, norm_squared, hull_me, hull, actual_ring_atom_duals, actual_ring_atoms, num_vertices, norm_squared) shared(maxima, possible_ring_atoms)
+   {
    for (auto& poly : (*all_image_polygons)) {
       // find atoms within 2 r0 units of the center of the ring
       int cx = poly.center.x;
@@ -216,6 +230,7 @@ void MakePolygons(std::vector<Polygon>* all_image_polygons, const padded_matrix_
       poly.points = actual_ring_atoms;
       poly.num_sides = num_vertices - 1; // subtract 1 because first point in list = last point, to close the shape
    }
+   }
 }
 
 void WritePolygonFile(const double time, const std::string directory_string, const std::vector<Polygon>& polys) {
@@ -225,7 +240,7 @@ void WritePolygonFile(const double time, const std::string directory_string, con
    if (file.is_open()) {
       file << "{";
       for (auto& p : polys) {
-         file << " {" << p.id << ", " << p.num_sides << ", {" << p.rgb[0] << ", " << p.rgb[1] << ", " << p.rgb[2] << "}, {";
+         file << " {" << p.num_sides << ", {" << p.rgb[0] << ", " << p.rgb[1] << ", " << p.rgb[2] << "}, {";
          file << p.center.x << ", " << p.center.y << "}, {";
          for (auto& v : p.points) {
             file << "{" << v.x << ", " << v.y << "}, ";
@@ -241,12 +256,16 @@ void WritePolygonFile(const double time, const std::string directory_string, con
 
 void Analyze(const matrix_t& mat, const double r0, const double time, const std::string directory_string) {
    // pad the matrix
+   omp_get_max_threads();
    padded_matrix_t pad;
+   #pragma omp parallel for private(ir, ic, tmp) shared(pad)
+   {
    for (int ir = 0; ir < PAD(PAD(NR)); ++ir) {
       for (int ic = 0; ic < PAD(PAD(NC)); ++ic) {
          double tmp = mat.get( (ir - PAD(0) + NR) % NR, (ic - PAD(0) + NC) % NC);
          pad.set(ir, ic, tmp);
       }
+   }
    }
    
    // find local minima in pad by comparing with 8 nearest neighbor pixels
@@ -263,16 +282,18 @@ void Analyze(const matrix_t& mat, const double r0, const double time, const std:
    
    // initialize a vector of polygons
    std::vector<Polygon> polygons_for_image;
-   int polygon_counter = 0;
+   #pragma omp parallel for private(ir, ic, cols) shared(minima, color_red, color_green, color_blue polygons_for_image, polygon_counter)
+   {
    for (int ir = 0; ir < PAD(PAD(NR)); ++ir) {
       for (int ic = 0; ic < PAD(PAD(NC)); ++ic) {
          if (minima.get(ir, ic) == 1.) {
             // initialize with sequential ID, color, and center point
             std::array<double, 3> cols = {color_red.get(ir, ic) / r0, color_green.get(ir, ic) / r0, color_blue.get(ir, ic) / r0};
-            polygons_for_image.push_back(Polygon(polygon_counter, cols, Point(ic, ir) ) );
-            polygon_counter += 1;
+            Point pt = Point(ic, ir);
+            polygons_for_image.push_back(Polygon(cols, pt ) );
          }
       }
+   }
    }
    MakePolygons(&polygons_for_image, maxima, r0);
    

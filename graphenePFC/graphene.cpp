@@ -12,25 +12,69 @@
 #include "analyze_coupled_layers_with_burger.hpp"
 #include <cmath>
 #include <fftw3.h>
+#include <omp.h>
+#include <ctime>
+#include <unistd.h>
 
 #define PI 3.141592653589793
 
 
 int main(int argc, const char* argv[]) {
    
-   // run-specific numbers
-   const double external_potential_amplitude = 1.0; // positive number
-   const double write_at_these_times[] = {0., 10., 100., 500., 1000., 1500., 2000., 3000., 4000., 6000., 8000.};
-   const double max_time = 10000.;
-   const double chemical_potential = 0.0;
-   const double max_timestep = 0.5;
-   const std::string directory_string = "/Users/Rachel/Documents/graphenePFC/p1horiz"; // write directory, evolving layer
-   const std::string directory_string_fix = "/Users/Rachel/Documents/graphenePFC/p1horizFix"; // write directory, fixed layer
+   int number_threads = omp_get_max_threads();
+   std::cout << "Number of threads available is " << number_threads << std::endl;
    
+   omp_set_num_threads(8);
+   #pragma omp parallel private(ID, n_threads)
+   {
+      int ID = omp_get_thread_num();
+      std::cout << "I'm number " << ID << std::endl;
+      int n_threads = omp_get_num_threads();
+      std::cout << "N threads is " << n_threads << std::endl;
+   }
+   
+   clock_t begin = clock();
+   /*
+   char *file_name_char = NULL;
+   double external_potential_amplitude = 1.0;
+   char *initial_condition_char = NULL;
+   
+   int option = 0;
+   while ((option = getopt(argc, (char **)argv, "n:a:c:")) != -1) {
+      switch (option) {
+         case 'n' : file_name_char = optarg;
+            break;
+         case 'a' : external_potential_amplitude = atof(optarg);
+            break;
+         case 'c' : initial_condition_char = optarg;
+            break;
+         default: std::cout << "Usage: graphene <Filename> <potential_amplitude> <initial_condition_name: Vertical, Steep, Diagonal, Shallow, Horizontal>"  << std::endl;
+            exit(EXIT_FAILURE);
+      }
+   }
+   
+   // run-specific numbers
+   std::string file_name(file_name_char);
+   std::string initial_condition(initial_condition_char);
+    */
+   double external_potential_amplitude = 1.0;
+   const std::string directory_string = "/Users/Rachel/Documents/graphenePFC/grapheneOutput/p1horiz"; // write location, evolving layer
+   const std::string directory_string_fix = directory_string + "Fix"; // write location, fixed layer
+    const std::string directory_string_energy_matrix = directory_string + "EMat"; // write location, energy matrix
+   const std::string directory_string_energy_list = directory_string + "EList"; // write location, list of total energies
+   
+   const double write_at_these_times[] = {0., 100., 500., 1000., 2000., 4000., 6000., 8000.};
+   const double max_time = 8000.;
+   const double chemical_potential = 0.0;
+   const double max_timestep = 1.;
+
    // define length scales
    const double r0 = SCALEUP * 2.12; // 2x the bond length
    const double a0 = SCALEUP * 1.7321;
+   clock_t end = clock();
+   double setup_secs = double(end - begin) / CLOCKS_PER_SEC;
    
+   begin = clock();
    // define appled potential, shift chemical_potentialst be zero for inital condition and analyze functions to work properly
    matrix_t applied_potential(r0, -1.0 * external_potential_amplitude, 0.0,
                               1.0, 0.0);
@@ -39,6 +83,22 @@ int main(int argc, const char* argv[]) {
    matrix_t n_mat;
    // initialCircle produces an AC circle inside an AB bulk, with random noise between them
    // initial____Stripes produces ab/ac stripes with described slope: Vertical, Steep, Diagonal, Shallow, Horizontal
+   
+   /*
+   if (initial_condition == "Horizontal") {
+      InitialHorizontalStripes(&n_mat, r0);
+   } else if (initial_condition == "Shallow") {
+         InitialShallowStripes(&n_mat, r0);
+   } else if (initial_condition == "Diagonal") {
+      InitialDiagonalStripes(&n_mat, r0);
+   } else if (initial_condition == "Steep") {
+      InitialSteepStripes(&n_mat, r0);
+   } else if (initial_condition == "Vertical") {
+      InitialVerticalStripes(&n_mat, r0);
+   } else {
+      InitialCircle(&n_mat, r0);
+   }
+    */
    InitialHorizontalStripes(&n_mat, r0);
    
    // convention:
@@ -50,10 +110,16 @@ int main(int argc, const char* argv[]) {
    // these are already in fourier space, not real space.
    matrix_t c2, cs1, cs2, minus_k_squared;
    MakeCs(&c2, &cs1, &cs2, &minus_k_squared, r0, a0);
+   end = clock();
+   double initialize_secs = double(end - begin) / CLOCKS_PER_SEC;
    
+   begin = clock();
    // outside the time loop: FFTW allocation, plans
    double rescale_fft = 1.0 / sqrt(NR * NC * 1.0); // corrects FFT magnitudes
    const double onethird = 1.0 / 3.0;
+   
+   // initialize multithreading support, must be first fftw call
+   int fftw_init_threads();
    
    // allocate input 2d array to be FFT'd, will be overwritten by FFTW
    fftw_complex *n_hat, *two_pt_correlations, *cs1_n, *cs2_n, *n_cs1_n, *n_cs2_n, *cs1_n_cs1_n, *cs2_n_cs2_n;
@@ -66,6 +132,8 @@ int main(int argc, const char* argv[]) {
    cs1_n_cs1_n = (fftw_complex*)fftw_malloc(sizeof(fftw_complex) * NR * NC);
    cs2_n_cs2_n = (fftw_complex*)fftw_malloc(sizeof(fftw_complex) * NR * NC);
    
+   // subsequent plans will be multithreaded
+   fftw_plan_with_nthreads(number_threads);
    // create a FFT plan, size NR x NC, input, output destination, direction of
    // FFT, and let FFTW guess what the best method is (fastest option, rather than doing an exhaustive search)
    fftw_plan make_n_hat, make_two_pt_corrs, make_cs1_n, make_cs2_n, make_n_cs1_n, make_n_cs2_n,
@@ -92,26 +160,27 @@ int main(int argc, const char* argv[]) {
    matrix_t dndt;
    
    // create time variable
-   double time = 0.0;
-   double old_time = -0.1;
+   double time = 0.;
+   double old_time = -0.;
    int print_counter = 0;
    int iteration = 0;
+   end = clock();
+   double fftw_init_secs = double(end - begin) / CLOCKS_PER_SEC;
+   std::vector<double> energy_list;
+   std::vector<double> time_list;
+   
+   double conditional_secs, one_pt_secs, two_pt_secs, three_pt_secs, time_advance_secs;
    
    for (; time < max_time; ++iteration) {
       
       if (iteration % 100 == 0) {
-         std::cout << "time: " << time << ", iteration: " << iteration << std::endl;
+         std::cout << "time: " << time << ", iteration: " << iteration << ", dt: " << time - old_time << std::endl;
       }
       
-      // write the output files
-      if (time >= write_at_these_times[print_counter] && old_time <= write_at_these_times[print_counter]) {
-         WriteMatrix(time, iteration, directory_string, n_mat);
-         WriteMatrix(time, iteration, directory_string_fix, applied_potential * -3.0);
-         AnalyzeCoupledBurger(n_mat, applied_potential * -3.0, r0, time, directory_string, directory_string_fix);
-         print_counter += 1;
-      }
-      
+      begin = clock();
       // begin 1-point correlation terms, dfdn_1
+      #pragma omp parallel for
+      {
       for (int ir = 0; ir < NR; ++ir) {
          for (int ic = 0; ic < NC; ++ic) {
             double tmp = n_mat.get(ir, ic);
@@ -119,19 +188,28 @@ int main(int argc, const char* argv[]) {
                        (tmp * tmp * tmp * onethird));
          }
       }
+      }
       // 1-point correlations complete
+      end = clock();
+      one_pt_secs = double(end - begin) / CLOCKS_PER_SEC;
       
+      begin = clock();
       // begin 2-point correlation terms, dfdn_2
       // define n_hat = FFT[n_mat] using current n_mat value
+      #pragma omp parallel for
+      {
       for (int ir = 0; ir < NR; ++ir) {
          for (int ic = 0; ic < NC; ++ic) {
             n_hat[ir * NC + ic][0] = n_mat.get(ir, ic);
             n_hat[ir * NC + ic][1] = 0.0;
          }
       }
+      }
       fftw_execute(make_n_hat);
       
       // define two_pt_correlations using current n_hat value
+      #pragma omp parallel for
+      {
       for (int ir = 0; ir < NR; ++ir) {
          for (int ic = 0; ic < NC; ++ic) {
             double tmp = c2.get(ir, ic);
@@ -139,19 +217,27 @@ int main(int argc, const char* argv[]) {
             two_pt_correlations[ir * NC + ic][1] = rescale_fft * n_hat[ir * NC + ic][1] * tmp;
          }
       }
+      }
       fftw_execute(make_two_pt_corrs);
       
+      #pragma omp parallel for
+      {
       for (int ir = 0; ir < NR; ++ir) {
          for (int ic = 0; ic < NC; ++ic) {
             dfdn_2.set(ir, ic, -1.0 * rescale_fft * two_pt_correlations[ir * NC + ic][0]);
          }
       }
+      }
       // 2-point correlations complete
+      end = clock();
+      two_pt_secs = double(end - begin) / CLOCKS_PER_SEC;
       
       // begin 3-point correlation terms, dfdn_3
-      
+      begin = clock();
       // define IFFT[ Cs1 nhat]
       // don't forget: (a + b i)(d i) = (-b d) + (a d) i
+      #pragma omp parallel for
+      {
       for (int ir = 0; ir < NR; ++ir) {
          for (int ic = 0; ic < NC; ++ic) {
             double tmp = cs1.get(ir, ic);
@@ -160,7 +246,10 @@ int main(int argc, const char* argv[]) {
             cs1_n[ir * NC + ic][1] = rescale_fft * n_hat[ir * NC + ic][0] * tmp;
          }
       }
+      }
       // define IFFT[ Cs2 nhat]
+      #pragma omp parallel for
+      {
       for (int ir = 0; ir < NR; ++ir) {
          for (int ic = 0; ic < NC; ++ic) {
             double tmp = cs2.get(ir, ic);
@@ -169,12 +258,15 @@ int main(int argc, const char* argv[]) {
             cs2_n[ir * NC + ic][1] = rescale_fft * n_hat[ir * NC + ic][0] * tmp;
          }
       }
+      }
       fftw_execute(make_cs1_n);
       fftw_execute(make_cs2_n);
       
       // define FFT[ n IFFT[Cs1 nhat]]
       // define FFT[ n IFFT[Cs2 nhat]]
       // don't forget: (a)(c + d i) = (a c) + (a d) i
+      #pragma omp parallel for
+      {
       for (int ir = 0; ir < NR; ++ir) {
          for (int ic = 0; ic < NC; ++ic) {
             double tmp = n_mat.get(ir, ic);
@@ -184,11 +276,14 @@ int main(int argc, const char* argv[]) {
             n_cs2_n[ir * NC + ic][1] = rescale_fft * cs2_n[ir * NC + ic][1] * tmp;
          }
       }
+      }
       fftw_execute(make_n_cs1_n);
       fftw_execute(make_n_cs2_n);
       
       // define IFFT[ Cs1 FFT[ n IFFT[ Cs1 nhat]]]
       // don'tforget: (a + b i)(d i) = (-b d) + (a d) i
+      #pragma omp parallel for
+      {
       for (int ir = 0; ir < NR; ++ir) {
          for (int ic = 0; ic < NC; ++ic) {
             double tmp = cs1.get(ir, ic);
@@ -198,7 +293,10 @@ int main(int argc, const char* argv[]) {
             rescale_fft * n_cs1_n[ir * NC + ic][0] * tmp;
          }
       }
+      }
       // define IFFT[ Cs2 FFT[ n IFFT[ Cs2 nhat]]]
+      #pragma omp parallel for
+      {
       for (int ir = 0; ir < NR; ++ir) {
          for (int ic = 0; ic < NC; ++ic) {
             double tmp;
@@ -209,10 +307,13 @@ int main(int argc, const char* argv[]) {
             rescale_fft * n_cs2_n[ir * NC + ic][0] * tmp;
          }
       }
+      }
       fftw_execute(make_cs1_n_cs1_n);
       fftw_execute(make_cs2_n_cs2_n);
       
       // make dfdn_3
+      #pragma omp parallel for
+      {
       for (int ir = 0; ir < NR; ++ir) {
          for (int ic = 0; ic < NC; ++ic) {
             double tmp1r = (cs1_n[ir * NC + ic][0] * cs1_n[ir * NC + ic][0]) -
@@ -225,9 +326,47 @@ int main(int argc, const char* argv[]) {
             dfdn_3.set(ir, ic, tmp);
          }
       }
+      }
       // 3-point correlations complete
+      end = clock();
+      three_pt_secs = double(end - begin) / CLOCKS_PER_SEC;
+   
+      begin = clock();
+      matrix_t energy;
+      double total_energy;
+      #pragma omp parallel for reduction(+:total_energy)
+      {
+         for (int ir = 0; ir < NR; ++ir) {
+            for (int ic = 0; ic < NC; ++ic) {
+               double local_n = n_mat.get(ir, ic);
+               double local_n_squared = local_n * local_n;
+               double one_pt_corrs = local_n_squared / 2. - (local_n_squared * local_n) / 6. +(local_n_squared * local_n_squared) / 12.;
+               double two_pt_corrs = -0.5 * local_n * rescale_fft * two_pt_correlations[0][ir * NC + ic];
+               double three_pt_corrs = -1. * onethird * local_n * (pow(rescale_fft * cs1_n[ir * NC + ic][0], 2) + pow(rescale_fft * cs2_n[ir * NC + ic][0], 2));
+               energy.set(ir, ic, one_pt_corrs + two_pt_corrs + three_pt_corrs - chemical_potential * local_n);
+               total_energy += one_pt_corrs + two_pt_corrs + three_pt_corrs - chemical_potential * local_n;
+            }
+         }
+      }
+      energy_list.push_back(total_energy);
+      time_list.push_back(time);
       
+      // write the output files, if necessary
+      if (time >= write_at_these_times[print_counter] && old_time <= write_at_these_times[print_counter]) {
+         WriteMatrix(time, total_energy, directory_string, n_mat);
+         WriteMatrix(time, total_energy, directory_string_fix, applied_potential * -3.0);
+         AnalyzeCoupledBurger(n_mat, applied_potential * -3.0, r0, time, directory_string, directory_string_fix);
+         WriteMatrix(time, iteration, directory_string_energy_matrix, energy);
+         print_counter += 1;
+      }
+      
+      end = clock();
+      conditional_secs = double(end - begin) / CLOCKS_PER_SEC;
+      
+      begin = clock();
       // define change in matrix with time, dN/dt
+      #pragma omp parallel for
+      {
       for (int ir = 0; ir < NR; ++ir) {
          for (int ic = 0; ic < NC; ++ic) {
             double self_potential = -(dfdn_1.get(ir, ic) + dfdn_2.get(ir, ic) -
@@ -235,19 +374,30 @@ int main(int argc, const char* argv[]) {
             dndt.set(ir, ic, self_potential + chemical_potential + applied_potential.get(ir, ic));
          }
       }
+      }
       
       // find adaptive timestep dt
       double dt = max_timestep / dndt.MaxAbsValue();
       // update n_mat, n_(i+1) = n_i + dt * d(n_i)/dt
+      #pragma omp parallel for
+      {
       for (int ir = 0; ir < NR; ++ir) {
          for (int ic = 0; ic < NC; ++ic) {
             double tmp = n_mat.get(ir, ic);
             n_mat.set(ir, ic, tmp + dt * dndt.get(ir, ic));
          }
       }
+      }
       // update time
       old_time = time;
       time += dt;
+      end = clock();
+      time_advance_secs = double(end - begin) / CLOCKS_PER_SEC;
+      
+      if (iteration % 100 == 0) {
+         std::cout << "Operation times:" << std::endl;
+         std::cout << "energy + conditionals: " << conditional_secs << ", 1-pt correlations: " << one_pt_secs << ", 2-pt correlations: " << two_pt_secs << ", 3-pt correlations: " << three_pt_secs << ", advance timestep: " << time_advance_secs << std::endl;
+      }
    }
    // end time iteration
    
@@ -260,6 +410,8 @@ int main(int argc, const char* argv[]) {
    fftw_destroy_plan(make_n_cs2_n);
    fftw_destroy_plan(make_cs1_n_cs1_n);
    fftw_destroy_plan(make_cs2_n_cs2_n);
+   
+   fftw_cleanup_threads();
    fftw_free(n_hat);
    fftw_free(two_pt_correlations);
    fftw_free(cs1_n);
@@ -269,14 +421,39 @@ int main(int argc, const char* argv[]) {
    fftw_free(cs1_n_cs1_n);
    fftw_free(cs2_n_cs2_n);
    
+   begin = clock();
+   /*
    // write the final timestep to a file
    WriteMatrix(time, iteration, directory_string, n_mat);
    WriteMatrix(time, iteration, directory_string_fix, applied_potential * -3.0);
    AnalyzeCoupledBurger(n_mat, applied_potential * -3.0, r0, time, directory_string, directory_string_fix);
+   */
+   // write the total energy vector to a file
+   std::string file_str = directory_string_energy_list + ".txt";
+   const char* file_char = file_str.c_str();
+   std::ofstream file(file_char);
+   if (file.is_open()) {
+      file << "{";
+      for (int i = 0; i < energy_list.size(); ++i) {
+         file << " {" << energy_list.at(i) << ", " << time_list.at(i) << "}, ";
+      }
+      file << " {} }";
+      file.close();
+      std::cout << "done writing " << file_char << std::endl;
+   } else {
+      std::cout << "Unable to open file" << std::endl;
+   }
+   
    // all calculations complete!
+   end = clock();
+   double final_analysis_secs = double(end - begin) / CLOCKS_PER_SEC;
+   
+   std::cout << "shared operation times:" << std::endl;
+   std::cout << "setup: " << setup_secs << ", initialize matrices: " << initialize_secs << ", intialize fftw: " << fftw_init_secs << ", final analysis: " << final_analysis_secs << std::endl;
    
    return 0;
 }
+
 
 /*
 int main(int argc, const char* argv[]) {

@@ -29,15 +29,13 @@ Matrix(double r0, double potential_amplitude, double potential_shift,
    const double c_min[] = {1.63093, 3.347616, 8184.70};
    const double atomic_spacing = 1.5 * r0 * potential_stretch;
    const double z_eq = 3.31;
+   double min_potential = -68.7968;
+   double max_potential = -68.1889;
    double potential_function_terms[3];
-   int i, ir, ic;
-   double min_potential, max_potential;
-   min_potential = -68.7968;
-   max_potential = -68.1889;
    // iterate over the matrix, storing values
-   for (ir = 0; ir < R; ++ir) {
-      for (ic = 0; ic < C; ++ic) {
-         for (i = 0; i < 3; ++i) {
+   for (int ir = 0; ir < R; ++ir) {
+      for (int ic = 0; ic < C; ++ic) {
+         for (int i = 0; i < 3; ++i) {
             potential_function_terms[i] =
                 c_max[i] -
                 (c_max[i] - c_min[i]) * (2. / 9.) *

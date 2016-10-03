@@ -16,6 +16,8 @@ struct Point {
 public:
    double x;
    double y;
+   Point () {
+   }
    Point (double c, double r) {
       x = c;
       y = r;
@@ -28,22 +30,32 @@ public:
 
 struct Polygon {
 public:
-   int id;
    int num_sides;
    std::array<double, 3> rgb;
    Point center;
    std::vector<Point> points;
    
-   Polygon (int identity, std::array<double, 3> rgbvals, Point centercoords) : id(identity), rgb(rgbvals), center(centercoords), points() {}
+   Polygon (std::array<double, 3> rgbvals, Point centercoords) {
+      rgb = rgbvals;
+      center = centercoords;
+   }
 };
 
 struct ScalarAndId {
    int id;
    double scalar;
+   double x;
+   double y;
    ScalarAndId(int i, double s) {
       id= i;
       scalar = s;
-   }
+   };
+   ScalarAndId(int i, double s, double xp, double yp) {
+      id= i;
+      scalar = s;
+      x = xp;
+      y = yp;
+   };
 };
 
 bool SortByScalar(const ScalarAndId& a, const ScalarAndId& b);
