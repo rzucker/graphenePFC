@@ -12,7 +12,7 @@
 #include "matrix_types.hpp"
 #include <boost/geometry.hpp>
 #include <omp.h>
-#include <ctime>
+#include <sys/time.h>
 
 struct FancyPoint {
    Point atom;
@@ -43,8 +43,7 @@ Point NearestPointVector(const Point point, const std::vector<Point>& possible_n
 }
 
 void CoupledStackingBurger(const padded_matrix_t& hole_t, const padded_matrix_t& hole_b, const padded_matrix_t& up_t, const padded_matrix_t& up_b, const padded_matrix_t& down_t, const padded_matrix_t& down_b, std::vector<FancyPoint>* all_atom_data, const double r0) {
-   #pragma omp parallel for private(ir, ic, neighbor_holes, neighbor_ups, neighbor_downs, center, aa, ab, ac), shared(all_atom_data)
-   {
+   
    for (int ir = 0; ir < PAD(PAD(NR)); ++ir) {
       for (int ic = 0; ic < PAD(PAD(NC)); ++ic) {
          
@@ -102,7 +101,6 @@ void CoupledStackingBurger(const padded_matrix_t& hole_t, const padded_matrix_t&
          
       }
    }
-   }
 }
 
 void WriteCoupledBurger(const double time, const std::string directory_string, const std::vector<FancyPoint>& pcb) {
@@ -122,12 +120,13 @@ void WriteCoupledBurger(const double time, const std::string directory_string, c
 }
 
 void AnalyzeCoupledBurger(const matrix_t& top, const matrix_t& bottom, const double r0, const double time, const std::string directory_string_t, const std::string directory_string_b) {
-   omp_get_max_threads();
+   // omp_get_max_threads();
    // pad the matrices
    padded_matrix_t pad_t, pad_b;
-   clock_t begin = clock();
-   #pragma omp parallel for private(ir, ic tmp_t, tmp_b) shared(top, bottom, pad_t, pad_b)
-   {
+   struct timeval start, stop;
+   gettimeofday(&start, NULL);
+   
+   
    for (int ir = 0; ir < PAD(PAD(NR)); ++ir) {
       for (int ic = 0; ic < PAD(PAD(NC)); ++ic) {
          double tmp_t = top.get( (ir - PAD(0) + NR) % NR, (ic - PAD(0) + NC) % NC);
@@ -136,11 +135,12 @@ void AnalyzeCoupledBurger(const matrix_t& top, const matrix_t& bottom, const dou
          pad_b.set(ir, ic, tmp_b);
       }
    }
-   }
-   clock_t end = clock();
-   double padding_secs = double(end - begin) / CLOCKS_PER_SEC;
    
-   begin = clock();
+   gettimeofday(&stop, NULL);
+   double padding_secs = ((stop.tv_sec  - start.tv_sec) * 1000000u +
+            stop.tv_usec - start.tv_usec) / 1.e6;
+   
+   gettimeofday(&start, NULL);
    // find local minima in pad by comparing with 8 nearest neighbor pixels
    const double global_max_t = top.MaxValue();
    const double global_max_b = bottom.MaxValue();
@@ -153,32 +153,35 @@ void AnalyzeCoupledBurger(const matrix_t& top, const matrix_t& bottom, const dou
    padded_matrix_t hole_t, hole_b, atoms_t, atoms_b;
    FindExtrema(pad_t, &hole_t, &atoms_t, max_minus_min_t, global_min_t);
    FindExtrema(pad_b, &hole_b, &atoms_b, max_minus_min_b, global_min_b);
-   end = clock();
-   double find_extrema_secs = double(end - begin) / CLOCKS_PER_SEC;
+   gettimeofday(&stop, NULL);
+   double find_extrema_secs = ((stop.tv_sec  - start.tv_sec) * 1000000u +
+            stop.tv_usec - start.tv_usec) / 1.e6;
    
-   begin = clock();
+   gettimeofday(&start, NULL);
    // split the atoms matrices into up and down
    padded_matrix_t up_t, up_b, down_t, down_b;
    MakeUpDownMatrices(&up_t, &down_t, atoms_t, r0);
    MakeUpDownMatrices(&up_b, &down_b, atoms_b, r0);
-   end = clock();
-   double make_up_down_secs = double(end - begin) / CLOCKS_PER_SEC;
-  
-   begin = clock();
+   gettimeofday(&stop, NULL);
+   double make_up_down_secs = ((stop.tv_sec  - start.tv_sec) * 1000000u +
+            stop.tv_usec - start.tv_usec) / 1.e6;
+   
+   gettimeofday(&start, NULL);
    // find stacking
    padded_matrix_t aa_t, ab_t, ac_t, aa_b, ab_b, ac_b;
    std::vector<FancyPoint> atom_data_t, atom_data_b;
    CoupledStackingBurger(hole_t, hole_b, up_t, up_b, down_t, down_b, &atom_data_t, r0);
    CoupledStackingBurger(hole_b, hole_t, up_b, up_t, down_b, down_t, &atom_data_b, r0);
-   end = clock();
-   double coupled_stacking_secs = double(end - begin) / CLOCKS_PER_SEC;
+   gettimeofday(&stop, NULL);
+   double coupled_stacking_secs = ((stop.tv_sec  - start.tv_sec) * 1000000u +
+            stop.tv_usec - start.tv_usec) / 1.e6;
    
-   begin = clock();
+   gettimeofday(&start, NULL);
    // initialize a vector of polygons
    std::vector<Polygon> polygons_t, polygons_b;
    // populate it with white polygons centered on each hole
-   #pragma omp parallel for private(ir, ic) shared(hole_t, hole_b, polygons_t, polygons_b, polygon_conter_t, polygon_counter_b)
-   {
+   
+   
    for (int ir = 0; ir < PAD(PAD(NR)); ++ir) {
       for (int ic = 0; ic < PAD(PAD(NC)); ++ic) {
          if (hole_t.get(ir, ic) == 1.) {
@@ -191,25 +194,27 @@ void AnalyzeCoupledBurger(const matrix_t& top, const matrix_t& bottom, const dou
          }
       }
    }
-   }
    
    // find the nearby atoms composing the polygon
    MakePolygons(&polygons_t, atoms_t, r0);
    MakePolygons(&polygons_b, atoms_b, r0);
-   end = clock();
-   double make_polygons_secs = double(end - begin) / CLOCKS_PER_SEC;
+   gettimeofday(&stop, NULL);
+   double make_polygons_secs = ((stop.tv_sec  - start.tv_sec) * 1000000u +
+            stop.tv_usec - start.tv_usec) / 1.e6;
    
-   begin = clock();
+   gettimeofday(&start, NULL);
    WriteCoupledBurger(time, directory_string_t, atom_data_t);
    WriteCoupledBurger(time, directory_string_b, atom_data_b);
-   end = clock();
-   double burger_secs = double(end - begin) / CLOCKS_PER_SEC;
+   gettimeofday(&stop, NULL);
+   double burger_secs = ((stop.tv_sec  - start.tv_sec) * 1000000u +
+            stop.tv_usec - start.tv_usec) / 1.e6;
    
-   begin = clock();
+   gettimeofday(&start, NULL);
    WritePolygonFile(time, directory_string_t, polygons_t);
    WritePolygonFile(time, directory_string_b, polygons_b);
-   end = clock();
-   double write_secs = double(end - begin) / CLOCKS_PER_SEC;
+   gettimeofday(&stop, NULL);
+   double write_secs = ((stop.tv_sec  - start.tv_sec) * 1000000u +
+            stop.tv_usec - start.tv_usec) / 1.e6;
    
    std::cout << "analysis times:" << std::endl;
    std::cout << "paddding: " << padding_secs << ", find extrema: " << find_extrema_secs << ", make up & down matrices: " << make_up_down_secs << ", coupled stacking: " << coupled_stacking_secs << ", make polygons: " << make_polygons_secs << ", vectors: " << burger_secs << ", write: " << write_secs << std::endl;

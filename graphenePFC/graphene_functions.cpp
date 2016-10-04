@@ -34,10 +34,8 @@ void InitialCircle(matrix_t* n_mat, const double r0) {
    const double max_radius = std::min(NC, NR) / 2.0;
    
    #pragma omp parallel for
-   {
    for (int ir = 0; ir < NR; ++ir) {
       #pragma omp simd
-      {
       for (int ic = 0; ic < NC; ++ic) {
          double radial_distance = sqrt((ir - domain_center[0]) * (ir - domain_center[0]) +
                                (ic - domain_center[1]) * (ic - domain_center[1]));
@@ -49,8 +47,6 @@ void InitialCircle(matrix_t* n_mat, const double r0) {
             (*n_mat).set(ir, ic, perfect_ab.get(ir, ic));
          }
       }
-      }
-   }
    }
 }
 
@@ -62,10 +58,8 @@ void InitialShallowStripes(matrix_t* n_mat, const double r0) {
    matrix_t perfect_ac(r0, 3.0, shift_ac, 1.0, 0.0);
    
    #pragma omp parallel for
-   {
    for (int ir = 0; ir < NR; ++ir) {
       #pragma omp simd
-      {
       for (int ic = 0; ic < NC; ++ic) {
          if (ir < (-0.5) * ic + 0.0690983 * NR) {
             (*n_mat).set(ir, ic, perfect_ab.get(ir, ic));
@@ -95,8 +89,6 @@ void InitialShallowStripes(matrix_t* n_mat, const double r0) {
             (*n_mat).set(ir, ic, perfect_ab.get(ir, ic));
          }
       }
-      }
-   }
    }
 }
 
@@ -108,10 +100,8 @@ void InitialSteepStripes(matrix_t* n_mat, const double r0) {
    matrix_t perfect_ac(r0, 3.0, shift_ac, 1.0, 0.0);
    
    #pragma omp parallel for
-   {
    for (int ir = 0; ir < NR; ++ir) {
       #pragma omp simd
-      {
       for (int ic = 0; ic < NC; ++ic) {
          if (ir < (-2.0) * ic + 0.138197 * NR) {
             (*n_mat).set(ir, ic, perfect_ab.get(ir, ic));
@@ -141,8 +131,6 @@ void InitialSteepStripes(matrix_t* n_mat, const double r0) {
             (*n_mat).set(ir, ic, perfect_ab.get(ir, ic));
          }
       }
-      }
-   }
    }
 }
 
@@ -155,11 +143,9 @@ void InitialDiagonalStripes(matrix_t* n_mat, const double r0) {
    
    double intercepts [] = {0.179289, 0.320711, 0.679289, 0.820711, 1.17929, 1.32071, 1.67929, 1.82071};
    
-   #pragma omp parallel for
-   {
+    #pragma omp parallel for
    for (int ir = 0; ir < NR; ++ir) {
       #pragma omp simd
-      {
       for (int ic = 0; ic < NC; ++ic) {
          if (ir < (-1.0) * ic + intercepts[0] * NR) {
             (*n_mat).set(ir, ic, perfect_ab.get(ir, ic));
@@ -181,8 +167,6 @@ void InitialDiagonalStripes(matrix_t* n_mat, const double r0) {
             (*n_mat).set(ir, ic, perfect_ab.get(ir, ic));
          }
       }
-      }
-   }
    }
 }
 
@@ -194,10 +178,8 @@ void InitialVerticalStripes(matrix_t* n_mat, const double r0) {
    matrix_t perfect_ac(r0, 3.0, shift_ac, 1.0, 0.0);
    
    #pragma omp parallel for
-   {
    for (int ir = 0; ir < NR; ++ir) {
       #pragma omp simd
-      {
       for (int ic = 0; ic < NC; ++ic) {
          if (ic < 0.05 * NR) {
             (*n_mat).set(ir, ic, (rand() % 2000) / 1000. - 1.0);
@@ -211,8 +193,6 @@ void InitialVerticalStripes(matrix_t* n_mat, const double r0) {
             (*n_mat).set(ir, ic, (rand() % 2000) / 1000. - 1.0);
          }
       }
-      }
-   }
    }
 }
 
@@ -224,10 +204,8 @@ void InitialHorizontalStripes(matrix_t* n_mat, const double r0) {
    matrix_t perfect_ac(r0, 3.0, shift_ac, 1.0, 0.0);
    
    #pragma omp parallel for
-   {
    for (int ir = 0; ir < NR; ++ir) {
       #pragma omp simd
-      {
       for (int ic = 0; ic < NC; ++ic) {
          if (ir < 0.2 * NR) {
             (*n_mat).set(ir, ic, perfect_ab.get(ir, ic));
@@ -241,8 +219,6 @@ void InitialHorizontalStripes(matrix_t* n_mat, const double r0) {
             (*n_mat).set(ir, ic, perfect_ab.get(ir, ic));
          }
       }
-      }
-   }
    }
 }
 
@@ -253,11 +229,9 @@ void InitialHorizontalDoubleStripes(matrix_t* n_mat, const double r0) {
    matrix_t perfect_ab(r0, 3.0, 2.0 * shift_ac, 1.0, 0.0);
    matrix_t perfect_ac(r0, 3.0, shift_ac, 1.0, 0.0);
    
-#pragma omp parallel for
-   {
+   #pragma omp parallel for
       for (int ir = 0; ir < NR; ++ir) {
-#pragma omp simd
-         {
+      #pragma omp simd
             for (int ic = 0; ic < NC; ++ic) {
                if (ir < 0.1 * NR) {
                   (*n_mat).set(ir, ic, perfect_ab.get(ir, ic));
@@ -279,9 +253,7 @@ void InitialHorizontalDoubleStripes(matrix_t* n_mat, const double r0) {
                   (*n_mat).set(ir, ic, perfect_ab.get(ir, ic));
                }
             }
-         }
       }
-   }
 }
 
 void InitialAA(matrix_t* n_mat, const double r0) {
@@ -289,30 +261,22 @@ void InitialAA(matrix_t* n_mat, const double r0) {
    matrix_t perfect_aa(r0, 3.0, 0.0, 1.0, 0.0);
 
    #pragma omp parallel for
-   {
    for (int ir = 0; ir < NR; ++ir) {
       #pragma omp simd
-      {
       for (int ic = 0; ic < NC; ++ic) {
          (*n_mat).set(ir, ic, perfect_aa.get(ir, ic));
       }
-      }
-   }
    }
 }
 
 void AddConstToMatrix(matrix_t* n_mat, const double amount) {
    #pragma omp parallel for
-   {
    for (int ir = 0; ir < NR; ++ir) {
       #pragma omp simd
-      {
       for (int ic = 0; ic < NC; ++ic) {
          double tmp = (*n_mat).get(ir, ic);
          (*n_mat).set(ir, ic, tmp + amount);
       }
-      }
-   }
    }
 }
 
@@ -322,7 +286,6 @@ void MakeKs(matrix_t* k_r, matrix_t* k_th) {
    double k_row[NR];
    double k_col[NC];
    #pragma omp simd
-   {
    for (int ir = 0; ir < NR; ++ir) {
       double tmp;
       if (ir > NR / 2.0) {
@@ -332,9 +295,7 @@ void MakeKs(matrix_t* k_r, matrix_t* k_th) {
       }
       k_row[ir] = 2.0 * PI * tmp;
    }
-   }
    #pragma omp simd
-   {
    for (int ic = 0; ic < NC; ++ic) {
       double tmp;
       if (ic > NC / 2.0) {
@@ -344,15 +305,12 @@ void MakeKs(matrix_t* k_r, matrix_t* k_th) {
       }
       k_col[ic] = 2.0 * PI * tmp;
    }
-   }
    
    // define magnitude of k matrix = k_r and angular k matrix = k_th
    // ensure that k_th terms are non-negative
    #pragma omp parallel for
-   {
    for (int ir = 0; ir < NR; ++ir) {
       #pragma omp simd
-      {
       for (int ic = 0; ic < NC; ++ic) {
          (*k_r).set(ir, ic,
                     sqrt((k_row[ir] * k_row[ir]) + (k_col[ic] * k_col[ic]) ) );
@@ -367,8 +325,6 @@ void MakeKs(matrix_t* k_r, matrix_t* k_th) {
             }
          }
       }
-      }
-   }
    }
 }
 
@@ -381,10 +337,8 @@ void MakeCs(matrix_t* c2, matrix_t* cs1, matrix_t* cs2, matrix_t* minus_k_square
    
    // make the C2 matrix for 2-point correlations
    #pragma omp parallel for
-   {
    for (int ir = 0; ir < NR; ++ir) {
       #pragma omp simd
-      {
       for (int ic = 0; ic < NC; ++ic) {
          (*minus_k_squared).set(ir, ic, -1. * k_r.get(ir, ic) * k_r.get(ir, ic));
          if (ir == 0 && ic == 0) {
@@ -398,16 +352,12 @@ void MakeCs(matrix_t* c2, matrix_t* cs1, matrix_t* cs2, matrix_t* minus_k_square
             (*c2).set(ir, ic, -12.0 * tmp);
          }
       }
-      }
-   }
    }
    // make the Cs1, Cs2 matrices for 3-point correlations
    // Cs1 and Cs2 still need to multiplied by i! No real component.
    #pragma omp parallel for
-   {
    for (int ir = 0; ir < NR; ++ir) {
       #pragma omp simd
-      {
       for (int ic = 0; ic < NC; ++ic) {
          double tmp = -2.5 * cos(3. * k_th.get(ir, ic)) *
          boost::math::cyl_bessel_j(3, a0 * k_r.get(ir, ic));
@@ -416,15 +366,11 @@ void MakeCs(matrix_t* c2, matrix_t* cs1, matrix_t* cs2, matrix_t* minus_k_square
          }
          (*cs1).set(ir, ic, tmp);
       }
-      }
-   }
    }
    
    #pragma omp parallel for
-   {
    for (int ir = 0; ir < NR; ++ir) {
       #pragma omp simd
-      {
       for (int ic = 0; ic < NC; ++ic) {
          double tmp = -2.5 * sin(3. * k_th.get(ir, ic)) *
          boost::math::cyl_bessel_j(3, a0 * k_r.get(ir, ic));
@@ -433,8 +379,6 @@ void MakeCs(matrix_t* c2, matrix_t* cs1, matrix_t* cs2, matrix_t* minus_k_square
          }
          (*cs2).set(ir, ic, tmp);
       }
-      }
-   }
    }
 }
 

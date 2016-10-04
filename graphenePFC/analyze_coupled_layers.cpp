@@ -73,8 +73,7 @@ void FindNeighbors(const int row, const int col, std::vector<Point>* possible_ne
 void MakeUpDownMatrices(padded_matrix_t* up_sites, padded_matrix_t* down_sites,
                         const padded_matrix_t& atom_sites, const double r0) {
    // put 1's in up and down sites
-   #pragma omp parallel for private(ir, ic, possible_neighbor_atoms, triangle) shared(atom_sites, up_sites, down_sites, r0)
-   {
+   
    for (int ir = 0; ir < PAD(PAD(NR)); ++ir) {
       for (int ic = 0; ic < PAD(PAD(NC)); ++ic) {
          // initialize up and down
@@ -103,13 +102,11 @@ void MakeUpDownMatrices(padded_matrix_t* up_sites, padded_matrix_t* down_sites,
          }
       }
    }
-   }
 }
 
 
 void CoupledStacking(const padded_matrix_t& hole_t, const padded_matrix_t& hole_b, const padded_matrix_t& up_t, const padded_matrix_t& up_b, const padded_matrix_t& down_t, const padded_matrix_t& down_b, padded_matrix_t* aa, padded_matrix_t* ab, padded_matrix_t* ac, const double r0) {
-   #pragma omp parallel for private(ir, ic, neighbor_holes, neighbor_ups, neighbor_downs, center, nearest_hole_dist, nearest_up_dist, nearest_down_dist) shared(up_t, down_t, hole_t, up_b, down_b, hole_b, aa, ab, ac)
-   {
+   
    for (int ir = 0; ir < PAD(PAD(NR)); ++ir) {
       for (int ic = 0; ic < PAD(PAD(NC)); ++ic) {
          
@@ -174,7 +171,6 @@ void CoupledStacking(const padded_matrix_t& hole_t, const padded_matrix_t& hole_
          }
       }
    }
-   }
 }
 
 void WriteCoupled(const double time, const std::string directory_string, const std::vector<PointAndColor>& pc) {
@@ -196,11 +192,10 @@ void WriteCoupled(const double time, const std::string directory_string, const s
 
 
 void AnalyzeCoupledLayers(const matrix_t& top, const matrix_t& bottom, const double r0, const double time, const std::string directory_string_t, const std::string directory_string_b) {
-   omp_get_max_threads();
+   // omp_get_max_threads();
    // pad the matrices
    padded_matrix_t pad_t, pad_b;
-   #pragma omp parallel for private(ir, ic, tmp_t, tmp_b) shared(pad_t, pad_b, top, bottom)
-   {
+   
    for (int ir = 0; ir < PAD(PAD(NR)); ++ir) {
       for (int ic = 0; ic < PAD(PAD(NC)); ++ic) {
          double tmp_t = top.get( (ir - PAD(0) + NR) % NR, (ic - PAD(0) + NC) % NC);
@@ -208,7 +203,6 @@ void AnalyzeCoupledLayers(const matrix_t& top, const matrix_t& bottom, const dou
          pad_t.set(ir, ic, tmp_t);
          pad_b.set(ir, ic, tmp_b);
       }
-   }
    }
    
    // find local minima in pad by comparing with 8 nearest neighbor pixels
@@ -234,8 +228,7 @@ void AnalyzeCoupledLayers(const matrix_t& top, const matrix_t& bottom, const dou
    CoupledStacking(hole_b, hole_t, up_b, up_t, down_b, down_t, &aa_b, &ab_b, &ac_b, r0);
    
    std::vector<PointAndColor> pts_and_colors_t, pts_and_colors_b;
-   #pragma omp parallel for private(ir, ic, atom) shared(atoms_t, pts_and_colors_t, pts_and_colors_b)
-   {
+   
    for (int ir = 0; ir < PAD(PAD(NR)); ++ir) {
       for (int ic = 0; ic < PAD(PAD(NC)); ++ic) {
          if (atoms_t.get(ir, ic) != 0.) {
@@ -247,7 +240,6 @@ void AnalyzeCoupledLayers(const matrix_t& top, const matrix_t& bottom, const dou
             pts_and_colors_b.push_back(PointAndColor(atom, {aa_b.get(ir, ic), ab_b.get(ir, ic), ac_b.get(ir, ic) }) );
          }
       }
-   }
    }
    
    WriteCoupled(time, directory_string_t, pts_and_colors_t);
