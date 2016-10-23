@@ -26,7 +26,7 @@ int main() {
    std::cout << "Number of threads available is " << number_threads << std::endl;
    
    int ID, n_threads;
-   omp_set_num_threads(8);
+   omp_set_num_threads(4);
    #pragma omp parallel private(ID, n_threads)
    {
       ID = omp_get_thread_num();
@@ -60,14 +60,14 @@ int main() {
    std::string file_name(file_name_char);
    std::string initial_condition(initial_condition_char);
     */
-   double external_potential_amplitude = 1.0;
-   const std::string directory_string = "/Users/Rachel/Documents/graphenePFC/grapheneOutput/p1horiz"; // write location, evolving layer
+   double external_potential_amplitude = 0.000001;
+   const std::string directory_string = "/Users/Rachel/Documents/graphenePFC/grapheneOutput/p0horiz"; // write location, evolving layer
    const std::string directory_string_fix = directory_string + "Fix"; // write location, fixed layer
     const std::string directory_string_energy_matrix = directory_string + "EMat"; // write location, energy matrix
    const std::string directory_string_energy_list = directory_string + "EList"; // write location, list of total energies
    
-   const double write_at_these_times[] = {0., 100., 500., 1000., 2000., 4000., 6000., 8000.};
-   const double max_time = 8000.;
+   const double write_at_these_times[] = {0., 100., 500., 1000., 2000., 4000., 6000., 8000., 10000.};
+   const double max_time = 10000.;
    const double chemical_potential = 0.0;
    const double max_timestep = 1.;
 
@@ -333,7 +333,7 @@ int main() {
    
       gettimeofday(&start, NULL);
       matrix_t energy;
-      double total_energy;
+      double total_energy = 0.;
       #pragma omp parallel for reduction(+ : total_energy)
       for (int ir = 0; ir < NR; ++ir) {
          for (int ic = 0; ic < NC; ++ic) {
@@ -347,10 +347,10 @@ int main() {
             double three_pt_corrs = -1. * onethird * local_n *
                               (pow(rescale_fft * cs1_n[ir * NC + ic][0], 2) +
                                pow(rescale_fft * cs2_n[ir * NC + ic][0], 2));
-            energy.set(ir, ic, one_pt_corrs + two_pt_corrs + three_pt_corrs -
+            energy.set(ir, ic, -1. * (one_pt_corrs + two_pt_corrs + three_pt_corrs -
                              chemical_potential * local_n);
-            total_energy += one_pt_corrs + two_pt_corrs + three_pt_corrs -
-                      chemical_potential * local_n;
+            total_energy += -1. * (one_pt_corrs + two_pt_corrs + three_pt_corrs -
+                      chemical_potential * local_n);
          }
       }
       energy_list.push_back(total_energy);
@@ -426,12 +426,12 @@ int main() {
    fftw_free(cs2_n_cs2_n);
    
    gettimeofday(&start, NULL);
-   /*
+   
    // write the final timestep to a file
    WriteMatrix(time, iteration, directory_string, n_mat);
    WriteMatrix(time, iteration, directory_string_fix, applied_potential * -3.0);
    AnalyzeCoupledBurger(n_mat, applied_potential * -3.0, r0, time, directory_string, directory_string_fix);
-   */
+   
    // write the total energy vector to a file
    std::string file_str = directory_string_energy_list + ".txt";
    const char* file_char = file_str.c_str();

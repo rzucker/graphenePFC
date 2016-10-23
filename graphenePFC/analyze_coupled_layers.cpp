@@ -18,7 +18,10 @@
 struct PointAndColor {
    Point atom;
    std::array<double, 3> abc;
-   PointAndColor (Point position, std::array<double, 3> rgb) : atom(position), abc(rgb) {}
+   PointAndColor (Point position, std::array<double, 3> rgb) {
+      atom = position;
+      abc = rgb;
+   }
 };
 
 void NearestThreePoints(std::vector<Point>* nearest_three_atoms, const std::vector<Point>& possible_neighbors) {
@@ -233,11 +236,13 @@ void AnalyzeCoupledLayers(const matrix_t& top, const matrix_t& bottom, const dou
       for (int ic = 0; ic < PAD(PAD(NC)); ++ic) {
          if (atoms_t.get(ir, ic) != 0.) {
             Point atom = Point(ic, ir);
-            pts_and_colors_t.push_back(PointAndColor(atom, {aa_t.get(ir, ic), ab_t.get(ir, ic), ac_t.get(ir, ic) }) );
+            std::array<double, 3> abc = {aa_t.get(ir, ic), ab_t.get(ir, ic), ac_t.get(ir, ic) };
+            pts_and_colors_t.push_back(PointAndColor(atom, abc) );
          }
          if (atoms_b.get(ir, ic) != 0.) {
             Point atom = Point(ic, ir);
-            pts_and_colors_b.push_back(PointAndColor(atom, {aa_b.get(ir, ic), ab_b.get(ir, ic), ac_b.get(ir, ic) }) );
+            std::array<double, 3> abc = {aa_b.get(ir, ic), ab_b.get(ir, ic), ac_b.get(ir, ic) };
+            pts_and_colors_b.push_back(PointAndColor(atom, abc) );
          }
       }
    }

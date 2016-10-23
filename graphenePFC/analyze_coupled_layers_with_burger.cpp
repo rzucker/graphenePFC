@@ -69,7 +69,8 @@ void CoupledStackingBurger(const padded_matrix_t& hole_t, const padded_matrix_t&
             if ( neighbor_downs.size() > 0) {
                ab = NearestPointDist(center, neighbor_downs) /(0.75 * r0);
             }
-            (*all_atom_data).push_back(FancyPoint(Point(ic, ir), {aa, ab, ac}, local_shift));
+            std::array<double, 3> colors = {aa, ab, ac};
+            (*all_atom_data).push_back(FancyPoint(Point(ic, ir), colors, local_shift));
          }
          
          
@@ -96,7 +97,8 @@ void CoupledStackingBurger(const padded_matrix_t& hole_t, const padded_matrix_t&
                aa = NearestPointDist(center, neighbor_downs) /(0.75 * r0);
                local_shift = NearestPointVector(center, neighbor_downs);
             }
-            (*all_atom_data).push_back(FancyPoint(Point(ic, ir), {aa, ab, ac}, local_shift));
+            std::array<double, 3> colors = {aa, ab, ac};
+            (*all_atom_data).push_back(FancyPoint(Point(ic, ir), colors, local_shift));
          }
          
       }
@@ -186,11 +188,13 @@ void AnalyzeCoupledBurger(const matrix_t& top, const matrix_t& bottom, const dou
       for (int ic = 0; ic < PAD(PAD(NC)); ++ic) {
          if (hole_t.get(ir, ic) == 1.) {
             // initialize with sequential ID, color, and center point
-            polygons_t.push_back(Polygon({1., 1., 1.}, Point(ic, ir) ) );
+            std::array<double, 3> rgb = {1., 1., 1.};
+            polygons_t.push_back(Polygon(rgb, Point(ic, ir) ) );
          }
          if (hole_b.get(ir, ic) == 1.) {
             // initialize with sequential ID, color, and center point
-            polygons_b.push_back(Polygon({1., 1., 1.}, Point(ic, ir) ) );
+            std::array<double, 3> rgb = {1., 1., 1.};
+            polygons_b.push_back(Polygon(rgb, Point(ic, ir) ) );
          }
       }
    }

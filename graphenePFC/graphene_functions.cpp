@@ -181,16 +181,16 @@ void InitialVerticalStripes(matrix_t* n_mat, const double r0) {
    for (int ir = 0; ir < NR; ++ir) {
       #pragma omp simd
       for (int ic = 0; ic < NC; ++ic) {
-         if (ic < 0.05 * NR) {
-            (*n_mat).set(ir, ic, (rand() % 2000) / 1000. - 1.0);
-         } else if (ic < 0.45 * NR) {
+         if (ic < 0.2 * NR) {
             (*n_mat).set(ir, ic, perfect_ab.get(ir, ic));
-         } else if (ic < 0.55 * NR) {
+         } else if (ic < 0.3 * NR) {
             (*n_mat).set(ir, ic, (rand() % 2000) / 1000. - 1.0);
-         } else if (ic < 0.95 * NR) {
+         } else if (ic < 0.7 * NR) {
             (*n_mat).set(ir, ic, perfect_ac.get(ir, ic));
-         } else {
+         } else if (ic < 0.8 * NR) {
             (*n_mat).set(ir, ic, (rand() % 2000) / 1000. - 1.0);
+         } else {
+            (*n_mat).set(ir, ic, perfect_ab.get(ir, ic));
          }
       }
    }
