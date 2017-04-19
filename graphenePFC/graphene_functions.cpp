@@ -335,6 +335,70 @@ void InitialSmoothStripes(matrix_t* n_mat, const double r0, const double degrees
 }
 
 
+void InitialSmoothStripesVert(matrix_t* n_mat, const double r0, const double degrees) {
+   
+   // define helper numbers
+   double const shift_ac = r0 * sqrt(3.) / 2.;
+   double potential_shift = 2.0 * shift_ac; // start with AB
+   double const intercepts [] = {0.2, 0.3, 0.7, 0.8};
+   
+   // repeated from matrix class constructor
+   const double potential_amplitude = 3.0;
+   const double atomic_spacing = 1.5 * r0;
+   // values and functional form from DFT paper, Regguzoni et al.
+   const double c_max[] = {2.75075, 3.349208, 8258.11};
+   const double c_min[] = {1.63093, 3.347616, 8184.70};
+   const double z_eq = 3.31;
+   double const min_potential = -68.7968;
+   double const max_potential = -68.1889;
+   
+   double potential_function_terms[3];
+   double potential_value;
+   // iterate over the matrix, storing values, gradually increasing shift
+   for (int ir = 0; ir < NR; ++ir) {
+      for (int ic = 0; ic < NC; ++ic) {
+         
+         double ic_rot = ic * cos(degrees * PI / 180.) - ir * sin(degrees * PI / 180.);
+         double ir_rot = ir * cos(degrees * PI / 180.) + ic * sin(degrees * PI / 180.);
+         
+         if (ic < intercepts[0] * NC) {
+            potential_shift = 2.0 * shift_ac;
+         } else if (ic < intercepts[1] * NC) {
+            potential_shift = (2.0 * shift_ac) - shift_ac * (ic - (NC * intercepts[0])) / (NC * (intercepts[1] - intercepts[0]));
+         } else if (ic < intercepts[2] * NC) {
+            potential_shift = shift_ac;
+         } else if (ic < intercepts[3] * NC) {
+            potential_shift = shift_ac + shift_ac * (ic - (NC * intercepts[2])) / (NC * (intercepts[3] - intercepts[2]));
+         } else {
+            potential_shift = 2.0 * shift_ac;
+         }
+         
+         for (int i = 0; i < 3; ++i) {
+            potential_function_terms[i] =
+            c_max[i] -
+            (c_max[i] - c_min[i]) * (2. / 9.) *
+            (3. - (2. * cos(2 * PI * ic_rot / atomic_spacing) *
+                   cos(2. * PI * (ir_rot - potential_shift) /
+                       (sqrt(3.) * atomic_spacing)) +
+                   cos(4. * PI * (ir_rot - potential_shift) /
+                       (sqrt(3.) * atomic_spacing))));
+         }
+         
+         potential_value =
+         (potential_amplitude *
+          (((potential_function_terms[0] *
+             exp(-z_eq * potential_function_terms[1]) -
+             potential_function_terms[2] / (z_eq * z_eq * z_eq * z_eq)) -
+            min_potential) /
+           (max_potential - min_potential) -
+           0.5));
+         
+         (*n_mat).set(ir, ic, potential_value);
+      }
+   }
+}
+
+
 void InitialHorizontalDoubleStripes(matrix_t* n_mat, const double r0) {
    
    srand(0);

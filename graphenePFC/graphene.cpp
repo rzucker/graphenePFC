@@ -21,19 +21,19 @@
 
 // int argc, const char* argv[]
 int main() {
-   double external_potential_amplitude = 0.009;
-   const std::string directory_string = "/Users/Rachel/Documents/graphenePFC/test/fix0";
+   double external_potential_amplitude = 0.1;
+   const std::string directory_string = "/Users/Rachel/Documents/graphenePFC/test/check71";
 
-   const double write_at_these_times[] = {0., 100., 500., 1000., 1500., 2000., 2500., 3000., 3500., 4000., 5000., 6000., 7000., 8000., 9000., 10000.};
-   const double max_time = 10000.;
+   const double write_at_these_times[] = {0., 100., 500., 1000., 1500., 2000., 2500., 3000., 3500., 4000., 5000., 6000., 7000., 8000.};
+   const double max_time = 8000.;
    const double chemical_potential = 0.0;
    const double max_timestep = 1.;
-   const double angle = 60.0;
+   const double angle = 70.8934;
 
    
    int number_threads = omp_get_max_threads();
    std::cout << "Number of threads available is " << number_threads << std::endl;
-   omp_set_num_threads(4);
+   omp_set_num_threads(2);
    #pragma omp parallel
    {
       std::cout << "Number of threads used is " << omp_get_num_threads() << std::endl;

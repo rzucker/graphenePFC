@@ -10,9 +10,9 @@
 #define matrix_types_hpp
 
 #include "matrix.hpp"
-#define NR 2688
+#define NR 2314
 #define NC 64
-#define SCALEUP 5.07506
+#define SCALEUP 4.42987
 #define PAD(x) (x+20)
 
 typedef Matrix<NR, NC> matrix_t;
