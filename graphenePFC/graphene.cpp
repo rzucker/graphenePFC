@@ -56,12 +56,12 @@ int main() {
    
    gettimeofday(&start, NULL);
    // define appled potential, shift chemical_potentialst be zero for inital condition and analyze functions to work properly
-   matrix_t applied_potential(r0, -1.0 * external_potential_amplitude, 0.0,
+   matrix_t applied_potential(a0, -1.0 * external_potential_amplitude, 0.0,
                               1.0, 0.0, angle);
    
    // make initial condition, all IC functions take the same arguments
    matrix_t n_mat;
-   InitialSmoothStripes(&n_mat, r0, angle);
+   InitialSmoothStripes(&n_mat, a0, angle);
    
    // convention:
    // if the hole is over a hole: AA stacking
@@ -317,7 +317,7 @@ int main() {
       if (time >= write_at_these_times[print_counter] && old_time <= write_at_these_times[print_counter]) {
          WriteMatrix(time, total_energy, directory_string, n_mat);
          WriteMatrix(time, total_energy, directory_string_fix, applied_potential * -3.0);
-         AnalyzeCoupledBurger(n_mat, applied_potential * -3.0, r0, time, directory_string, directory_string_fix);
+         AnalyzeCoupledBurger(n_mat, applied_potential * -3.0, a0, time, directory_string, directory_string_fix);
          WriteMatrix(time, iteration, directory_string_energy_matrix, energy);
          print_counter += 1;
       }
@@ -387,7 +387,7 @@ int main() {
    // write the final timestep to a file
    WriteMatrix(time, iteration, directory_string, n_mat);
    WriteMatrix(time, iteration, directory_string_fix, applied_potential * -3.0);
-   AnalyzeCoupledBurger(n_mat, applied_potential * -3.0, r0, time, directory_string, directory_string_fix);
+   AnalyzeCoupledBurger(n_mat, applied_potential * -3.0, a0, time, directory_string, directory_string_fix);
    
    // write the total energy vector to a file
    std::string file_str = directory_string_energy_list + ".txt";

@@ -69,7 +69,7 @@ void FindExtrema(const padded_matrix_t& mat, padded_matrix_t* minima, padded_mat
 // this populates the 6 argument vectors with the coordinates of
 // hole sites, up sites, and down sites near the origin unit cell
 
-void PotentialSites(const double r0, std::vector<Point>* hole, std::vector<Point>* up, std::vector<Point>* down) {
+void PotentialSites(const double bond_length, std::vector<Point>* hole, std::vector<Point>* up, std::vector<Point>* down) {
    
    // locate the up, down and hole sites in the origin unit cell
    // convention:
@@ -78,9 +78,7 @@ void PotentialSites(const double r0, std::vector<Point>* hole, std::vector<Point
    // if the hole is over an up site: AB stacking
    double sqrt3 = sqrt(3.);
    double holes_in_uc[4][2] = {{0., 0.},
-                          {1.5, 0.},
-                          {0.75, 0.75 * sqrt3},
-                          {2.25, 0.75 * sqrt3}};
+                          {0.5 * sqrt3, 1.5}};
    double downs_in_uc[4][2] = {{0., 0.5 * sqrt3},
                           {1.5, 0.5 * sqrt3},
                           {0.75, 1.25 * sqrt3},
@@ -96,12 +94,12 @@ void PotentialSites(const double r0, std::vector<Point>* hole, std::vector<Point
    for (int site = 0; site < 4; ++site) {
       for (int uc_row_index = -1; uc_row_index < 2; ++uc_row_index) {
          for (int uc_col_index = -1; uc_col_index < 2; ++uc_col_index) {
-            (*hole)[current_index].x = r0 * holes_in_uc[site][0] + r0 * 1.5 * uc_col_index;
-            (*hole)[current_index].y = r0 * holes_in_uc[site][1] + r0 * 1.5 * sqrt3 * uc_row_index;
-            (*up)[current_index].x = r0 * ups_in_uc[site][0] + r0 * 1.5 * uc_col_index;
-            (*up)[current_index].y = r0 * ups_in_uc[site][1] + r0 * 1.5 * sqrt3 * uc_row_index;
-            (*down)[current_index].x = r0 * downs_in_uc[site][0] + r0 * 1.5 * uc_col_index;
-            (*down)[current_index].y = r0 * downs_in_uc[site][1] + r0 * 1.5 * sqrt3 * uc_row_index;
+            (*hole)[current_index].x = bond_length * holes_in_uc[site][0] + bond_length * 1.5 * uc_col_index;
+            (*hole)[current_index].y = bond_length * holes_in_uc[site][1] + bond_length * 1.5 * sqrt3 * uc_row_index;
+            (*up)[current_index].x = bond_length * ups_in_uc[site][0] + bond_length * 1.5 * uc_col_index;
+            (*up)[current_index].y = bond_length * ups_in_uc[site][1] + bond_length * 1.5 * sqrt3 * uc_row_index;
+            (*down)[current_index].x = bond_length * downs_in_uc[site][0] + bond_length * 1.5 * uc_col_index;
+            (*down)[current_index].y = bond_length * downs_in_uc[site][1] + bond_length * 1.5 * sqrt3 * uc_row_index;
             current_index += 1;
          }
       }
@@ -131,10 +129,10 @@ double NearestPointDist(const Point pt,
 // and 3 if the hole is near a potential down site.
 
 void FindStacking(const padded_matrix_t& minima, padded_matrix_t* color_red,
-                  padded_matrix_t* color_green, padded_matrix_t* color_blue, const double r0) {
+                  padded_matrix_t* color_green, padded_matrix_t* color_blue, const double bond_length) {
 
    // generate lists of hole, up, and down sites near the origin unit cell with
-   // corners (0,0) and (3/2 r0) * (sqrt(3), 1)
+   // corners (0,0) and (bond_length) * (sqrt(3), 3)
    std::vector<Point> hole, up, down;
    // their size = 4 sites / UC * 3x3 UC block = 36 sites
    for (int i = 0; i < 36; ++i) {
@@ -142,7 +140,7 @@ void FindStacking(const padded_matrix_t& minima, padded_matrix_t* color_red,
       up.push_back(Point(0,0) );
       down.push_back(Point(0,0) );
    }
-   PotentialSites(r0, &hole, &up, &down);
+   PotentialSites(bond_length, &hole, &up, &down);
 
    // determine the stacking of a local minimum
    double sqrt3 = sqrt(3.0);
@@ -244,7 +242,7 @@ void WritePolygonFile(const double time, const std::string directory_string, con
       std::cout << "Unable to open file" << std::endl;
 }
 
-void Analyze(const matrix_t& mat, const double r0, const double time, const std::string directory_string) {
+void Analyze(const matrix_t& mat, const double bond_length, const double time, const std::string directory_string) {
    // pad the matrix
    padded_matrix_t pad;
    
@@ -266,7 +264,7 @@ void Analyze(const matrix_t& mat, const double r0, const double time, const std:
    
    // find stacking color from minima
    padded_matrix_t color_red, color_green, color_blue;
-   FindStacking(minima, &color_red, &color_green, &color_blue, r0);
+   FindStacking(minima, &color_red, &color_green, &color_blue, bond_length);
    
    // initialize a vector of polygons
    std::vector<Polygon> polygons_for_image;
