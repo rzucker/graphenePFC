@@ -41,7 +41,7 @@ void InitialCircle(matrix_t* n_mat, const double r0) {
                                (ic - domain_center[1]) * (ic - domain_center[1]));
          if (radial_distance < max_radius * 0.35) {
             (*n_mat).set(ir, ic, perfect_ac.get(ir, ic));
-         } else if (radial_distance < max_radius * 0.55) {
+         } else if (radial_distance < max_radius * 0.40) {
             (*n_mat).set(ir, ic, (rand() % 2000) / 1000. - 1.0);
          } else {
             (*n_mat).set(ir, ic, perfect_ab.get(ir, ic));
@@ -50,6 +50,43 @@ void InitialCircle(matrix_t* n_mat, const double r0) {
    }
 }
 
+/*
+void InitialCircle(matrix_t* n_mat, const double r0, const double degrees=0.0) {
+   
+   // Seed the random number to a constant for repeatability.
+   srand(0);
+   // make AB and AC matrices
+   // convention:
+   // if the holeis over a hole: AA stacking
+   // if the the hole is over a down site: AC stacking
+   // if the hole is over an up site: AB stacking
+   double shift_ac = r0 * sqrt(3.) / 2.;
+   matrix_t perfect_ab(r0, 3.0, 2.0 * shift_ac, 1.0, 0.0);
+   matrix_t perfect_ac(r0, 3.0, shift_ac, 1.0, 0.0, degrees);
+   
+   // define circular zone
+   const double domain_center[2] = {NR / 2., NC / 2.};
+   const double max_radius = std::min(NC, NR) / 2.0;
+   
+#pragma omp parallel for
+   for (int ir = 0; ir < NR; ++ir) {
+#pragma omp simd
+      for (int ic = 0; ic < NC; ++ic) {
+         double radial_distance = sqrt((ir - domain_center[0]) * (ir - domain_center[0]) +
+                                       (ic - domain_center[1]) * (ic - domain_center[1])
+                                       );
+         if (radial_distance < max_radius * 0.35) {
+            (*n_mat).set(ir, ic, perfect_rot.get(ir, ic));
+         } else if (radial_distance < max_radius * 0.4) {
+            (*n_mat).set(ir, ic, (rand() % 2000) / 1000. - 1.0);
+         } else {
+            (*n_mat).set(ir, ic, perfect_ab.get(ir, ic));
+         }
+      }
+   }
+}
+*/
+
 void InitialShallowStripes(matrix_t* n_mat, const double r0) {
 
    srand(0);
@@ -57,33 +94,37 @@ void InitialShallowStripes(matrix_t* n_mat, const double r0) {
    matrix_t perfect_ab(r0, 3.0, 2.0 * shift_ac, 1.0, 0.0);
    matrix_t perfect_ac(r0, 3.0, shift_ac, 1.0, 0.0);
    
+   double intercepts [] = {0.122205, 0.127795, 0.372205, 0.377795, 0.622205, 0.627795, \
+0.872205, 0.877795, 1.1222, 1.1278, 1.3722, 1.3778}; // corrected, width = 0.005
+   
+   
    #pragma omp parallel for
    for (int ir = 0; ir < NR; ++ir) {
       #pragma omp simd
       for (int ic = 0; ic < NC; ++ic) {
-         if (ir < (-0.5) * ic + 0.0690983 * NR) {
+         if (ir < (-0.5) * ic + intercepts[0] * NR) {
             (*n_mat).set(ir, ic, perfect_ab.get(ir, ic));
-         } else if (ir < (-0.5) * ic + 0.180902 * NR) {
+         } else if (ir < (-0.5) * ic + intercepts[1] * NR) {
             (*n_mat).set(ir, ic, (rand() % 2000) / 1000. - 1.0);
-         } else if (ir < (-0.5) * ic + 0.319098 * NR) {
+         } else if (ir < (-0.5) * ic + intercepts[2] * NR) {
             (*n_mat).set(ir, ic, perfect_ac.get(ir, ic));
-         } else if (ir < (-0.5) * ic + 0.430902 * NR) {
+         } else if (ir < (-0.5) * ic + intercepts[3] * NR) {
             (*n_mat).set(ir, ic, (rand() % 2000) / 1000. - 1.0);
-         } else if (ir < (-0.5) * ic + 0.569098 * NR) {
+         } else if (ir < (-0.5) * ic + intercepts[4] * NR) {
             (*n_mat).set(ir, ic, perfect_ab.get(ir, ic));
-         } else if (ir < (-0.5) * ic + 0.680902 * NR) {
+         } else if (ir < (-0.5) * ic + intercepts[5] * NR) {
             (*n_mat).set(ir, ic, (rand() % 2000) / 1000. - 1.0);
-         } else if (ir < (-0.5) * ic + 0.819098 * NR) {
+         } else if (ir < (-0.5) * ic + intercepts[6] * NR) {
             (*n_mat).set(ir, ic, perfect_ac.get(ir, ic));
-         } else if (ir < (-0.5) * ic + 0.930902 * NR) {
+         } else if (ir < (-0.5) * ic + intercepts[7] * NR) {
             (*n_mat).set(ir, ic, (rand() % 2000) / 1000. - 1.0);
-         } else if (ir < (-0.5) * ic + 1.0691 * NR) {
+         } else if (ir < (-0.5) * ic + intercepts[8] * NR) {
             (*n_mat).set(ir, ic, perfect_ab.get(ir, ic));
-         } else if (ir < (-0.5) * ic + 1.1809 * NR) {
+         } else if (ir < (-0.5) * ic + intercepts[9] * NR) {
             (*n_mat).set(ir, ic, (rand() % 2000) / 1000. - 1.0);
-         } else if (ir < (-0.5) * ic + 1.3191 * NR) {
+         } else if (ir < (-0.5) * ic + intercepts[10] * NR) {
             (*n_mat).set(ir, ic, perfect_ac.get(ir, ic));
-         } else if (ir < (-0.5) * ic + 1.4309 * NR) {
+         } else if (ir < (-0.5) * ic + intercepts[11] * NR) {
             (*n_mat).set(ir, ic, (rand() % 2000) / 1000. - 1.0);
          } else {
             (*n_mat).set(ir, ic, perfect_ab.get(ir, ic));
@@ -99,33 +140,36 @@ void InitialSteepStripes(matrix_t* n_mat, const double r0) {
    matrix_t perfect_ab(r0, 3.0, 2.0 * shift_ac, 1.0, 0.0);
    matrix_t perfect_ac(r0, 3.0, shift_ac, 1.0, 0.0);
    
+   double intercepts [] = {0.24441, 0.25559, 0.74441, 0.75559, 1.24441, 1.25559, 1.74441, \
+1.75559, 2.24441, 2.25559, 2.74441, 2.75559}; // corrected, width = 0.005
+   
    #pragma omp parallel for
    for (int ir = 0; ir < NR; ++ir) {
       #pragma omp simd
       for (int ic = 0; ic < NC; ++ic) {
-         if (ir < (-2.0) * ic + 0.138197 * NR) {
+         if (ir < (-2.0) * ic + intercepts[0] * NR) {
             (*n_mat).set(ir, ic, perfect_ab.get(ir, ic));
-         } else if (ir < (-2.0) * ic + 0.361803 * NR) {
+         } else if (ir < (-2.0) * ic + intercepts[1] * NR) {
             (*n_mat).set(ir, ic, (rand() % 2000) / 1000. - 1.0);
-         } else if (ir < (-2.0) * ic + 0.638197 * NR) {
+         } else if (ir < (-2.0) * ic + intercepts[2] * NR) {
             (*n_mat).set(ir, ic, perfect_ac.get(ir, ic));
-         } else if (ir < (-2.0) * ic + 0.861803 * NR) {
+         } else if (ir < (-2.0) * ic + intercepts[3] * NR) {
             (*n_mat).set(ir, ic, (rand() % 2000) / 1000. - 1.0);
-         } else if (ir < (-2.0) * ic + 1.1382 * NR) {
+         } else if (ir < (-2.0) * ic + intercepts[4] * NR) {
             (*n_mat).set(ir, ic, perfect_ab.get(ir, ic));
-         } else if (ir < (-2.0) * ic + 1.3618 * NR) {
+         } else if (ir < (-2.0) * ic + intercepts[5] * NR) {
             (*n_mat).set(ir, ic, (rand() % 2000) / 1000. - 1.0);
-         } else if (ir < (-2.0) * ic + 1.6382 * NR) {
+         } else if (ir < (-2.0) * ic + intercepts[6] * NR) {
             (*n_mat).set(ir, ic, perfect_ac.get(ir, ic));
-         } else if (ir < (-2.0) * ic + 1.8618 * NR) {
+         } else if (ir < (-2.0) * ic + intercepts[7] * NR) {
             (*n_mat).set(ir, ic, (rand() % 2000) / 1000. - 1.0);
-         } else if (ir < (-2.0) * ic + 2.1382 * NR) {
+         } else if (ir < (-2.0) * ic + intercepts[8] * NR) {
             (*n_mat).set(ir, ic, perfect_ab.get(ir, ic));
-         } else if (ir < (-2.0) * ic + 2.3618 * NR) {
+         } else if (ir < (-2.0) * ic + intercepts[9] * NR) {
             (*n_mat).set(ir, ic, (rand() % 2000) / 1000. - 1.0);
-         } else if (ir < (-2.0) * ic + 2.6382 * NR) {
+         } else if (ir < (-2.0) * ic + intercepts[10] * NR) {
             (*n_mat).set(ir, ic, perfect_ac.get(ir, ic));
-         } else if (ir < (-2.0) * ic + 2.8616 * NR) {
+         } else if (ir < (-2.0) * ic + intercepts[11] * NR) {
             (*n_mat).set(ir, ic, (rand() % 2000) / 1000. - 1.0);
          } else {
             (*n_mat).set(ir, ic, perfect_ab.get(ir, ic));
@@ -141,7 +185,8 @@ void InitialDiagonalStripes(matrix_t* n_mat, const double r0) {
    matrix_t perfect_ab(r0, 3.0, 2.0 * shift_ac, 1.0, 0.0);
    matrix_t perfect_ac(r0, 3.0, shift_ac, 1.0, 0.0);
    
-   double intercepts [] = {0.179289, 0.320711, 0.679289, 0.820711, 1.17929, 1.32071, 1.67929, 1.82071};
+   double intercepts [] = {0.246464, 0.253536, 0.746464, 0.753536, 1.24646, 1.25354, 1.74646, \
+1.75354}; // corrected, width = 0.005
    
     #pragma omp parallel for
    for (int ir = 0; ir < NR; ++ir) {
@@ -177,17 +222,19 @@ void InitialVerticalStripes(matrix_t* n_mat, const double r0) {
    matrix_t perfect_ab(r0, 3.0, 2.0 * shift_ac, 1.0, 0.0);
    matrix_t perfect_ac(r0, 3.0, shift_ac, 1.0, 0.0);
    
+   double intercepts [] = {0.2475, 0.2525, 0.7475, 0.7525};
+   
    #pragma omp parallel for
    for (int ir = 0; ir < NR; ++ir) {
       #pragma omp simd
       for (int ic = 0; ic < NC; ++ic) {
-         if (ic < 0.2 * NR) {
+         if (ic < intercepts[0] * NC) {
             (*n_mat).set(ir, ic, perfect_ab.get(ir, ic));
-         } else if (ic < 0.3 * NR) {
+         } else if (ic < intercepts[1] * NC) {
             (*n_mat).set(ir, ic, (rand() % 2000) / 1000. - 1.0);
-         } else if (ic < 0.7 * NR) {
+         } else if (ic < intercepts[2] * NC) {
             (*n_mat).set(ir, ic, perfect_ac.get(ir, ic));
-         } else if (ic < 0.8 * NR) {
+         } else if (ic < intercepts[3] * NC) {
             (*n_mat).set(ir, ic, (rand() % 2000) / 1000. - 1.0);
          } else {
             (*n_mat).set(ir, ic, perfect_ab.get(ir, ic));
@@ -203,17 +250,19 @@ void InitialHorizontalStripes(matrix_t* n_mat, const double r0) {
    matrix_t perfect_ab(r0, 3.0, 2.0 * shift_ac, 1.0, 0.0);
    matrix_t perfect_ac(r0, 3.0, shift_ac, 1.0, 0.0);
    
+   double intercepts [] = {0.2475, 0.2525, 0.7475, 0.7525};
+   
    #pragma omp parallel for
    for (int ir = 0; ir < NR; ++ir) {
       #pragma omp simd
       for (int ic = 0; ic < NC; ++ic) {
-         if (ir < 0.2 * NR) {
+         if (ir < intercepts[0] * NR) {
             (*n_mat).set(ir, ic, perfect_ab.get(ir, ic));
-         } else if (ir < 0.3 * NR) {
+         } else if (ir < intercepts[1] * NR) {
             (*n_mat).set(ir, ic, (rand() % 2000) / 1000. - 1.0);
-         } else if (ir < 0.7 * NR) {
+         } else if (ir < intercepts[2] * NR) {
             (*n_mat).set(ir, ic, perfect_ac.get(ir, ic));
-         } else if (ir < 0.8 * NR) {
+         } else if (ir < intercepts[3] * NR) {
             (*n_mat).set(ir, ic, (rand() % 2000) / 1000. - 1.0);
          } else {
             (*n_mat).set(ir, ic, perfect_ab.get(ir, ic));
@@ -221,6 +270,70 @@ void InitialHorizontalStripes(matrix_t* n_mat, const double r0) {
       }
    }
 }
+
+void InitialSmoothStripes(matrix_t* n_mat, const double r0, const double degrees) {
+   
+   // define helper numbers
+   double const shift_ac = r0 * sqrt(3.) / 2.;
+   double potential_shift = 2.0 * shift_ac; // start with AB
+   double const intercepts [] = {0.2, 0.3, 0.7, 0.8};
+   
+   // repeated from matrix class constructor
+   const double potential_amplitude = 3.0;
+   const double atomic_spacing = 1.5 * r0;
+   // values and functional form from DFT paper, Regguzoni et al.
+   const double c_max[] = {2.75075, 3.349208, 8258.11};
+   const double c_min[] = {1.63093, 3.347616, 8184.70};
+   const double z_eq = 3.31;
+   double const min_potential = -68.7968;
+   double const max_potential = -68.1889;
+   
+   double potential_function_terms[3];
+   double potential_value;
+   // iterate over the matrix, storing values, gradually increasing shift
+   for (int ir = 0; ir < NR; ++ir) {
+      for (int ic = 0; ic < NC; ++ic) {
+
+         double ic_rot = ic * cos(degrees * PI / 180.) - ir * sin(degrees * PI / 180.);
+         double ir_rot = ir * cos(degrees * PI / 180.) + ic * sin(degrees * PI / 180.);
+         
+         if (ir < intercepts[0] * NR) {
+            potential_shift = 2.0 * shift_ac;
+         } else if (ir < intercepts[1] * NR) {
+            potential_shift = (2.0 * shift_ac) - shift_ac * (ir - (NR * intercepts[0])) / (NR * (intercepts[1] - intercepts[0]));
+         } else if (ir < intercepts[2] * NR) {
+            potential_shift = shift_ac;
+         } else if (ir < intercepts[3] * NR) {
+            potential_shift = shift_ac + shift_ac * (ir - (NR * intercepts[2])) / (NR * (intercepts[3] - intercepts[2]));
+         } else {
+            potential_shift = 2.0 * shift_ac;
+         }
+         
+         for (int i = 0; i < 3; ++i) {
+            potential_function_terms[i] =
+            c_max[i] -
+            (c_max[i] - c_min[i]) * (2. / 9.) *
+            (3. - (2. * cos(2 * PI * ic_rot / atomic_spacing) *
+                   cos(2. * PI * (ir_rot - potential_shift) /
+                       (sqrt(3.) * atomic_spacing)) +
+                   cos(4. * PI * (ir_rot - potential_shift) /
+                       (sqrt(3.) * atomic_spacing))));
+         }
+         
+         potential_value =
+         (potential_amplitude *
+          (((potential_function_terms[0] *
+             exp(-z_eq * potential_function_terms[1]) -
+             potential_function_terms[2] / (z_eq * z_eq * z_eq * z_eq)) -
+            min_potential) /
+           (max_potential - min_potential) -
+           0.5));
+         
+         (*n_mat).set(ir, ic, potential_value);
+      }
+   }
+}
+
 
 void InitialHorizontalDoubleStripes(matrix_t* n_mat, const double r0) {
    
@@ -383,14 +496,14 @@ void MakeCs(matrix_t* c2, matrix_t* cs1, matrix_t* cs2, matrix_t* minus_k_square
 }
 
 void WriteMatrix(const double time, const double energy_val, const std::string directory_string, const matrix_t& mat) {
-   std::fixed;
+   
    const std::string time_str = "{" + boost::lexical_cast<std::string>(energy_val) + "}, ";
    const std::string file_str =
    directory_string + boost::lexical_cast<std::string>(floor(time)) + ".txt";
    const char* time_char = time_str.c_str();
    const char* file_char = file_str.c_str();
    mat.WriteToFile(file_char, time_char);
-   std::scientific;
+  
 }
 
 // an inital condition that produces an AC circle inside an AB matrix

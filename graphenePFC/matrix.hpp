@@ -8,6 +8,7 @@
 
 #ifndef matrix_hpp
 #define matrix_hpp
+#include <stdexcept>
 #include <cmath>
 #include <fstream>
 #include <iostream>
@@ -15,12 +16,14 @@
 #include <vector>
 #define PI 3.141592653589793
 
+#include <execinfo.h>
+
 template <int R, int C> class Matrix {
  public:
    // Constructors
 
    Matrix() { _storage.resize(R * C); }
-
+/*
 Matrix(double r0, double potential_amplitude, double potential_shift,
        double potential_stretch, double add_constant) {
    _storage.resize(R * C);
@@ -57,15 +60,84 @@ Matrix(double r0, double potential_amplitude, double potential_shift,
       }
    }
 }   
+*/
+   
+   Matrix(const double r0, double potential_amplitude, double potential_shift,
+          double potential_stretch, double add_constant, double degrees=0.) {
+      _storage.resize(R * C);
+      // define helper numbers
+      const double c_max[] = {2.75075, 3.349208, 8258.11};
+      const double c_min[] = {1.63093, 3.347616, 8184.70};
+      const double atomic_spacing = 1.5 * r0 * potential_stretch;
+      const double z_eq = 3.31;
+      double min_potential = -68.7968;
+      double max_potential = -68.1889;
+      double potential_function_terms[3];
+      // iterate over the matrix, storing values
+      for (int ir = 0; ir < R; ++ir) {
+         for (int ic = 0; ic < C; ++ic) {
+            for (int i = 0; i < 3; ++i) {
+               double ic_rot = ic * cos(degrees * PI / 180.) - ir * sin(degrees * PI / 180.);
+               double ir_rot = ir * cos(degrees * PI / 180.) + ic * sin(degrees * PI / 180.);
+               potential_function_terms[i] =
+               c_max[i] -
+               (c_max[i] - c_min[i]) * (2. / 9.) *
+               (3. - (2. * cos(2 * PI * (ic_rot) / atomic_spacing) *
+                      cos(2. * PI * (ir_rot - potential_shift) /
+                          (sqrt(3.) * atomic_spacing)) +
+                      cos(4. * PI * (ir_rot - potential_shift) /
+                          (sqrt(3.) * atomic_spacing))));
+            }
+            _storage[ir * C + ic] =
+            (potential_amplitude *
+             (((potential_function_terms[0] *
+                exp(-z_eq * potential_function_terms[1]) -
+                potential_function_terms[2] / (z_eq * z_eq * z_eq * z_eq)) -
+               min_potential) /
+              (max_potential - min_potential) -
+              0.5)) +
+            add_constant;
+         }
+      }
+   }
+   
+   
    // be able to ask matrix what it's size is
    static const int max_row = R;
    static const int max_col = C;
 
    // Methods
+   void set(int ir, int ic, double value) {
+    _storage.at(ir * C + ic) = value;
+     //_storage[ir * C + ic] = value;
+   }
 
-   void set(int ir, int ic, double value) { _storage[ir * C + ic] = value; }
+   double get(int ir, int ic) const {
+     try {
+      double r = _storage.at(ir * C + ic);
+      return r;
+     }
+     catch (std::out_of_range e) {
+      std::cout << "Out of Range error in get(" << ir << ", " << ic << ")" << std::endl;
 
-   double get(int ir, int ic) const { return _storage[ir * C + ic]; }
+	  void *array[10];
+	  size_t size;
+	  char **strings;
+	  size_t i;
+
+	  size = backtrace (array, 10);
+	  strings = backtrace_symbols (array, size);
+
+	  printf ("Obtained %zd stack frames.\n", size);
+
+	  for (i = 0; i < size; i++)
+	     printf ("%s\n", strings[i]);
+
+	  free (strings);
+       exit(1);
+     }
+     //return _storage[ir * C + ic];
+   }
 
    void WriteToFile(const char* file_name, const char* file_header) const {
       std::ofstream file(file_name);
@@ -85,9 +157,9 @@ Matrix(double r0, double potential_amplitude, double potential_shift,
          file << _storage[((R - 1) * C) + C - 1] << "}" << std::endl;
          file << "}";
          file.close();
-         std::cout << "done writing " << file_name << std::endl;
+         std::cout << "done writing <" << file_name << ">" <<  std::endl;
       } else
-         std::cout << "Unable to open file" << std::endl;
+         std::cout << "Unable to open file <" << file_name << ">" <<  std::endl;
    }
    
    Matrix operator+(const double& add) {

@@ -20,6 +20,7 @@ void InitialDiagonalStripes(matrix_t* n_mat, const double r0);
 void InitialVerticalStripes(matrix_t* n_mat, const double r0);
 void InitialHorizontalStripes(matrix_t* n_mat, const double r0);
 void InitialHorizontalDoubleStripes(matrix_t* n_mat, const double r0);
+void InitialSmoothStripes(matrix_t* n_mat, const double r0, const double degrees);
 // an inital condition to make a perfect "A" sheet
 void InitialAA(matrix_t* n_mat, const double r0);
 

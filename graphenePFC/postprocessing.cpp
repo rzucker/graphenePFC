@@ -19,7 +19,7 @@ typedef boost::geometry::model::polygon<BoostPoint> BoostPolygon;
 
 bool SortByScalar(const ScalarAndId& a, const ScalarAndId& b) {
    return a.scalar < b.scalar;
-};
+}
 
 // this finds local minima that are within 20% of the lowest value in the
 // matrix, and local maxima withing 20% of the highest value,
@@ -176,8 +176,8 @@ void MakePolygons(std::vector<Polygon>* all_image_polygons, const padded_matrix_
    
       for (auto& poly : (*all_image_polygons)) {
       // find atoms within 2 r0 units of the center of the ring
-      int cx = poly.center.x;
-      int cy = poly.center.y;
+      int row = poly.center.y;
+      int col = poly.center.x;
       std::vector<Point> possible_ring_atoms;
       for (int i = floor(-(r0 * 3.)); i < ceil((r0 * 3.)); ++i) {
          for (int j = floor(-(r0 * 3.)); j < ceil((r0 * 3.)); ++j) {
@@ -185,8 +185,8 @@ void MakePolygons(std::vector<Polygon>* all_image_polygons, const padded_matrix_
                // wrap coordinates into matrix
                // neighbor positions are relative to the center point,
                // i.e., the center is shifted to (0,0)
-               if (maxima.get((cy + i + PAD(PAD(NC)) ) % PAD(PAD(NC)), (cx + j + PAD(PAD(NR)) ) % PAD(PAD(NR))) != 0.) {
-                  possible_ring_atoms.push_back(Point(j, i) );
+               if (maxima.get((row + i + PAD(PAD(NR)) ) % PAD(PAD(NR)), (col + j + PAD(PAD(NC)) ) % PAD(PAD(NC)) ) != 0.) { 
+                  possible_ring_atoms.push_back(Point(i, j) );
                }
             }
          }
@@ -215,7 +215,7 @@ void MakePolygons(std::vector<Polygon>* all_image_polygons, const padded_matrix_
       int num_vertices = 0;
       for (auto& pt : actual_ring_atom_duals) {
          double norm_squared = pt.x * pt.x + pt.y * pt.y;
-         actual_ring_atoms.push_back(Point(cx + (pt.x / norm_squared), cy + (pt.y / norm_squared)) );
+         actual_ring_atoms.push_back(Point(col + (pt.y / norm_squared), row + (pt.x / norm_squared)));
          num_vertices += 1;
       }
       poly.points = actual_ring_atoms;

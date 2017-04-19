@@ -124,6 +124,7 @@ void WriteCoupledBurger(const double time, const std::string directory_string, c
 void AnalyzeCoupledBurger(const matrix_t& top, const matrix_t& bottom, const double r0, const double time, const std::string directory_string_t, const std::string directory_string_b) {
    // omp_get_max_threads();
    // pad the matrices
+  
    padded_matrix_t pad_t, pad_b;
    struct timeval start, stop;
    gettimeofday(&start, NULL);
@@ -140,8 +141,8 @@ void AnalyzeCoupledBurger(const matrix_t& top, const matrix_t& bottom, const dou
    
    gettimeofday(&stop, NULL);
    double padding_secs = ((stop.tv_sec  - start.tv_sec) * 1000000u +
-            stop.tv_usec - start.tv_usec) / 1.e6;
-   
+            stop.tv_usec - start.tv_usec) / 1.e6; 
+ 
    gettimeofday(&start, NULL);
    // find local minima in pad by comparing with 8 nearest neighbor pixels
    const double global_max_t = top.MaxValue();
@@ -157,8 +158,8 @@ void AnalyzeCoupledBurger(const matrix_t& top, const matrix_t& bottom, const dou
    FindExtrema(pad_b, &hole_b, &atoms_b, max_minus_min_b, global_min_b);
    gettimeofday(&stop, NULL);
    double find_extrema_secs = ((stop.tv_sec  - start.tv_sec) * 1000000u +
-            stop.tv_usec - start.tv_usec) / 1.e6;
-   
+            stop.tv_usec - start.tv_usec) / 1.e6; 
+
    gettimeofday(&start, NULL);
    // split the atoms matrices into up and down
    padded_matrix_t up_t, up_b, down_t, down_b;
@@ -205,21 +206,21 @@ void AnalyzeCoupledBurger(const matrix_t& top, const matrix_t& bottom, const dou
    gettimeofday(&stop, NULL);
    double make_polygons_secs = ((stop.tv_sec  - start.tv_sec) * 1000000u +
             stop.tv_usec - start.tv_usec) / 1.e6;
-   
+ 
    gettimeofday(&start, NULL);
    WriteCoupledBurger(time, directory_string_t, atom_data_t);
    WriteCoupledBurger(time, directory_string_b, atom_data_b);
    gettimeofday(&stop, NULL);
    double burger_secs = ((stop.tv_sec  - start.tv_sec) * 1000000u +
             stop.tv_usec - start.tv_usec) / 1.e6;
-   
+
    gettimeofday(&start, NULL);
    WritePolygonFile(time, directory_string_t, polygons_t);
    WritePolygonFile(time, directory_string_b, polygons_b);
    gettimeofday(&stop, NULL);
    double write_secs = ((stop.tv_sec  - start.tv_sec) * 1000000u +
             stop.tv_usec - start.tv_usec) / 1.e6;
-   
+ 
    std::cout << "analysis times:" << std::endl;
    std::cout << "paddding: " << padding_secs << ", find extrema: " << find_extrema_secs << ", make up & down matrices: " << make_up_down_secs << ", coupled stacking: " << coupled_stacking_secs << ", make polygons: " << make_polygons_secs << ", vectors: " << burger_secs << ", write: " << write_secs << std::endl;
 }
