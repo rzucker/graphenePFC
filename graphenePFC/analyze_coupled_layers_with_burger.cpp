@@ -42,7 +42,7 @@ Point NearestPointVector(const Point point, const std::vector<Point>& possible_n
    return Point(magnitude * cos(angle), magnitude * sin(angle));
 }
 
-void CoupledStackingBurger(const padded_matrix_t& hole_t, const padded_matrix_t& hole_b, const padded_matrix_t& up_t, const padded_matrix_t& up_b, const padded_matrix_t& down_t, const padded_matrix_t& down_b, std::vector<FancyPoint>* all_atom_data, const double r0) {
+void CoupledStackingBurger(const padded_matrix_t& hole_t, const padded_matrix_t& hole_b, const padded_matrix_t& up_t, const padded_matrix_t& up_b, const padded_matrix_t& down_t, const padded_matrix_t& down_b, std::vector<FancyPoint>* all_atom_data, const double a0) {
    
    for (int ir = 0; ir < PAD(PAD(NR)); ++ir) {
       for (int ic = 0; ic < PAD(PAD(NC)); ++ic) {
@@ -50,24 +50,25 @@ void CoupledStackingBurger(const padded_matrix_t& hole_t, const padded_matrix_t&
          if (up_t.get(ir, ic) == 1.) {
             std::vector<Point> neighbor_holes, neighbor_ups, neighbor_downs;
             Point center = Point(0., 0.);
-            Point local_shift = Point(10 * r0, 10 * r0);
-            double aa = 10 * r0;
-            double ab = 10 * r0;
-            double ac = 10 * r0;
+            double const bond_length = a0 / sqrt(3.);
+            Point local_shift = Point(10 * bond_length, 10 * bond_length);
+            double aa = 10 * bond_length;
+            double ab = 10 * bond_length;
+            double ac = 10 * bond_length;
             // find the nearest holes, ups, and downs in the bottom layer to a given up atom in the top layer
-            FindNeighbors(ir, ic, &neighbor_holes, hole_b, r0);
-            FindNeighbors(ir, ic, &neighbor_ups, up_b, r0);
-            FindNeighbors(ir, ic, &neighbor_downs, down_b, r0);
+            FindNeighbors(ir, ic, &neighbor_holes, hole_b, a0);
+            FindNeighbors(ir, ic, &neighbor_ups, up_b, a0);
+            FindNeighbors(ir, ic, &neighbor_downs, down_b, a0);
             // find the minimum distance between the up atom in the top layer and the 3 site types in the bottom layer
             if ( neighbor_holes.size() > 0) {
-               ac = NearestPointDist(center, neighbor_holes) /(0.75 * r0);
+               ac = NearestPointDist(center, neighbor_holes) /(bond_length);
             }
             if ( neighbor_ups.size() > 0) {
-               aa = NearestPointDist(center, neighbor_ups) /(0.75 * r0);
+               aa = NearestPointDist(center, neighbor_ups) /(bond_length);
                local_shift = NearestPointVector(center, neighbor_ups);
             }
             if ( neighbor_downs.size() > 0) {
-               ab = NearestPointDist(center, neighbor_downs) /(0.75 * r0);
+               ab = NearestPointDist(center, neighbor_downs) /(bond_length);
             }
             std::array<double, 3> colors = {aa, ab, ac};
             (*all_atom_data).push_back(FancyPoint(Point(ic, ir), colors, local_shift));
@@ -77,24 +78,25 @@ void CoupledStackingBurger(const padded_matrix_t& hole_t, const padded_matrix_t&
          if (down_t.get(ir, ic) == 1.) {
             std::vector<Point> neighbor_holes, neighbor_ups, neighbor_downs;
             Point center = Point(0., 0.);
-            Point local_shift = Point(10 * r0, 10 * r0);
-            double aa = 10 * r0;
-            double ab = 10 * r0;
-            double ac = 10 * r0;
+            double const bond_length = a0 / sqrt(3.);
+            Point local_shift = Point(10 * bond_length, 10 * bond_length);
+            double aa = 10 * bond_length;
+            double ab = 10 * bond_length;
+            double ac = 10 * bond_length;
             // find the nearest holes, ups, and downs in the bottom layer to a given up atom in the top layer
-            FindNeighbors(ir, ic, &neighbor_holes, hole_b, r0);
-            FindNeighbors(ir, ic, &neighbor_ups, up_b, r0);
-            FindNeighbors(ir, ic, &neighbor_downs, down_b, r0);
+            FindNeighbors(ir, ic, &neighbor_holes, hole_b, a0);
+            FindNeighbors(ir, ic, &neighbor_ups, up_b, a0);
+            FindNeighbors(ir, ic, &neighbor_downs, down_b, a0);
             // find the minimum distance between the up atom in the top layer and the 3 site types in the bottom layer
             if ( neighbor_holes.size() > 0) {
-               ab = NearestPointDist(center, neighbor_holes) /(0.75 * r0);
+               ab = NearestPointDist(center, neighbor_holes) /(bond_length);
             }
             if ( neighbor_ups.size() > 0) {
-               ac = NearestPointDist(center, neighbor_ups) /(0.75 * r0);
+               ac = NearestPointDist(center, neighbor_ups) /(bond_length);
                local_shift = NearestPointVector(center, neighbor_ups);
             }
             if ( neighbor_downs.size() > 0) {
-               aa = NearestPointDist(center, neighbor_downs) /(0.75 * r0);
+               aa = NearestPointDist(center, neighbor_downs) /(bond_length);
                local_shift = NearestPointVector(center, neighbor_downs);
             }
             std::array<double, 3> colors = {aa, ab, ac};
@@ -121,7 +123,7 @@ void WriteCoupledBurger(const double time, const std::string directory_string, c
       std::cout << "Unable to open file" << std::endl;
 }
 
-void AnalyzeCoupledBurger(const matrix_t& top, const matrix_t& bottom, const double r0, const double time, const std::string directory_string_t, const std::string directory_string_b) {
+void AnalyzeCoupledBurger(const matrix_t& top, const matrix_t& bottom, const double a0, const double time, const std::string directory_string_t, const std::string directory_string_b) {
    // omp_get_max_threads();
    // pad the matrices
   
@@ -163,8 +165,8 @@ void AnalyzeCoupledBurger(const matrix_t& top, const matrix_t& bottom, const dou
    gettimeofday(&start, NULL);
    // split the atoms matrices into up and down
    padded_matrix_t up_t, up_b, down_t, down_b;
-   MakeUpDownMatrices(&up_t, &down_t, atoms_t, r0);
-   MakeUpDownMatrices(&up_b, &down_b, atoms_b, r0);
+   MakeUpDownMatrices(&up_t, &down_t, atoms_t, a0);
+   MakeUpDownMatrices(&up_b, &down_b, atoms_b, a0);
    gettimeofday(&stop, NULL);
    double make_up_down_secs = ((stop.tv_sec  - start.tv_sec) * 1000000u +
             stop.tv_usec - start.tv_usec) / 1.e6;
@@ -173,8 +175,8 @@ void AnalyzeCoupledBurger(const matrix_t& top, const matrix_t& bottom, const dou
    // find stacking
    padded_matrix_t aa_t, ab_t, ac_t, aa_b, ab_b, ac_b;
    std::vector<FancyPoint> atom_data_t, atom_data_b;
-   CoupledStackingBurger(hole_t, hole_b, up_t, up_b, down_t, down_b, &atom_data_t, r0);
-   CoupledStackingBurger(hole_b, hole_t, up_b, up_t, down_b, down_t, &atom_data_b, r0);
+   CoupledStackingBurger(hole_t, hole_b, up_t, up_b, down_t, down_b, &atom_data_t, a0);
+   CoupledStackingBurger(hole_b, hole_t, up_b, up_t, down_b, down_t, &atom_data_b, a0);
    gettimeofday(&stop, NULL);
    double coupled_stacking_secs = ((stop.tv_sec  - start.tv_sec) * 1000000u +
             stop.tv_usec - start.tv_usec) / 1.e6;
@@ -201,8 +203,8 @@ void AnalyzeCoupledBurger(const matrix_t& top, const matrix_t& bottom, const dou
    }
    
    // find the nearby atoms composing the polygon
-   MakePolygons(&polygons_t, atoms_t, r0);
-   MakePolygons(&polygons_b, atoms_b, r0);
+   MakePolygons(&polygons_t, atoms_t, a0);
+   MakePolygons(&polygons_b, atoms_b, a0);
    gettimeofday(&stop, NULL);
    double make_polygons_secs = ((stop.tv_sec  - start.tv_sec) * 1000000u +
             stop.tv_usec - start.tv_usec) / 1.e6;

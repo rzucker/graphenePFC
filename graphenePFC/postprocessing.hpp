@@ -62,13 +62,13 @@ bool SortByScalar(const ScalarAndId& a, const ScalarAndId& b);
 
 // complete post-processing analysis:
 // produce an image that shows stacking of the two layers
-void Analyze(const matrix_t& mat, const double r0, const double time, const std::string directory_string);
+void Analyze(const matrix_t& mat, const double a0, const double time, const std::string directory_string);
 
 void FindExtrema(const padded_matrix_t& mat, padded_matrix_t* minima, padded_matrix_t* maxima, const double max_minus_min, const double global_min);
 
 double NearestPointDist(const Point pt, const std::vector<Point>& candidates);
 
-void MakePolygons(std::vector<Polygon>* all_image_polygons, const padded_matrix_t& maxima, const double r0);
+void MakePolygons(std::vector<Polygon>* all_image_polygons, const padded_matrix_t& maxima, const double a0);
 void WritePolygonFile(const double time, const std::string directory_string, const std::vector<Polygon>& polys);
 
 #endif /* postprocessing_hpp */

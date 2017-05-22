@@ -12,6 +12,6 @@
 #include <stdio.h>
 #include "matrix_types.hpp"
 
-void AnalyzeCoupledBurger(const matrix_t& top, const matrix_t& bottom, const double r0, const double time, const std::string directory_string_t, const std::string directory_string_b);
+void AnalyzeCoupledBurger(const matrix_t& top, const matrix_t& bottom, const double a0, const double time, const std::string directory_string_t, const std::string directory_string_b);
 
 #endif /* analyze_coupled_layers_with_burger_hpp */

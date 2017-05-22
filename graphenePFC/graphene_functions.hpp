@@ -12,17 +12,17 @@
 #include "matrix_types.hpp"
 
 // an inital condition that produces an AC circle inside an AB matrix
-void InitialCircle(matrix_t* n_mat, const double r0);
+void InitialCircle(matrix_t* n_mat, const double a0);
 // an inital condition that produces stripes
-void InitialShallowStripes(matrix_t* n_mat, const double r0);
-void InitialSteepStripes(matrix_t* n_mat, const double r0);
-void InitialDiagonalStripes(matrix_t* n_mat, const double r0);
-void InitialVerticalStripes(matrix_t* n_mat, const double r0);
-void InitialHorizontalStripes(matrix_t* n_mat, const double r0);
-void InitialHorizontalDoubleStripes(matrix_t* n_mat, const double r0);
-void InitialSmoothStripes(matrix_t* n_mat, const double r0, const double degrees);
+void InitialShallowStripes(matrix_t* n_mat, const double a0);
+void InitialSteepStripes(matrix_t* n_mat, const double a0);
+void InitialDiagonalStripes(matrix_t* n_mat, const double a0);
+void InitialVerticalStripes(matrix_t* n_mat, const double a0);
+void InitialHorizontalStripes(matrix_t* n_mat, const double a0);
+void InitialHorizontalDoubleStripes(matrix_t* n_mat, const double a0);
+void InitialSmoothStripes(matrix_t* n_mat, const double a0, const double degrees);
 // an inital condition to make a perfect "A" sheet
-void InitialAA(matrix_t* n_mat, const double r0);
+void InitialPerfect(matrix_t* n_mat, const double a0);
 
 // a function that can add a constant shift to a matrix, useful for conserved dynamics
 void AddConstToMatrix(matrix_t* n_mat, const double amount);

@@ -62,13 +62,14 @@ Matrix(double r0, double potential_amplitude, double potential_shift,
 }   
 */
    
-   Matrix(const double r0, double potential_amplitude, double potential_shift,
+   Matrix(const double a0, double potential_amplitude, double potential_shift,
           double potential_stretch, double add_constant, double degrees=0.) {
       _storage.resize(R * C);
       // define helper numbers
       const double c_max[] = {2.75075, 3.349208, 8258.11};
       const double c_min[] = {1.63093, 3.347616, 8184.70};
-      const double atomic_spacing = 1.5 * r0 * potential_stretch;
+      const double zigzag_unit_cell = a0 * potential_stretch;
+      // this is Sqrt[3] times the bond length! zigzag_unit_cell = unit cell length in zigzag direction
       const double z_eq = 3.31;
       double min_potential = -68.7968;
       double max_potential = -68.1889;
@@ -76,17 +77,19 @@ Matrix(double r0, double potential_amplitude, double potential_shift,
       // iterate over the matrix, storing values
       for (int ir = 0; ir < R; ++ir) {
          for (int ic = 0; ic < C; ++ic) {
+            // ic = zigzag direction
+            // ir = armchair direction
             for (int i = 0; i < 3; ++i) {
                double ic_rot = ic * cos(degrees * PI / 180.) - ir * sin(degrees * PI / 180.);
                double ir_rot = ir * cos(degrees * PI / 180.) + ic * sin(degrees * PI / 180.);
                potential_function_terms[i] =
                c_max[i] -
                (c_max[i] - c_min[i]) * (2. / 9.) *
-               (3. - (2. * cos(2 * PI * (ic_rot) / atomic_spacing) *
+               (3. - (2. * cos(2 * PI * (ic_rot) / zigzag_unit_cell) *
                       cos(2. * PI * (ir_rot - potential_shift) /
-                          (sqrt(3.) * atomic_spacing)) +
+                          (sqrt(3.) * zigzag_unit_cell)) +
                       cos(4. * PI * (ir_rot - potential_shift) /
-                          (sqrt(3.) * atomic_spacing))));
+                          (sqrt(3.) * zigzag_unit_cell))));
             }
             _storage[ir * C + ic] =
             (potential_amplitude *
