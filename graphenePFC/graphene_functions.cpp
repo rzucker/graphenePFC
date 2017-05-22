@@ -434,14 +434,17 @@ void InitialHorizontalDoubleStripes(matrix_t* n_mat, const double r0) {
 }
 
 void InitialAA(matrix_t* n_mat, const double r0) {
-
+   
+   double const shift_ac = r0 * sqrt(3.) / 2.;
    matrix_t perfect_aa(r0, 3.0, 0.0, 1.0, 0.0);
+   matrix_t perfect_ab(r0, 3.0, 2.0 * shift_ac, 1.0, 0.0);
+   matrix_t perfect_ac(r0, 3.0, shift_ac, 1.0, 0.0);
 
    #pragma omp parallel for
    for (int ir = 0; ir < NR; ++ir) {
       #pragma omp simd
       for (int ic = 0; ic < NC; ++ic) {
-         (*n_mat).set(ir, ic, perfect_aa.get(ir, ic));
+         (*n_mat).set(ir, ic, perfect_ab.get(ir, ic));
       }
    }
 }
