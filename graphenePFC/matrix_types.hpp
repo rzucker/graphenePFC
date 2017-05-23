@@ -10,9 +10,11 @@
 #define matrix_types_hpp
 
 #include "matrix.hpp"
-#define NR 2688
-#define NC 64
-#define SCALEUP 5.07506
+#define NR 208
+// R = armchair direction
+#define NC 280
+// C = zigzag direction
+#define SCALEUP 11.547
 #define PAD(x) (x+20)
 
 typedef Matrix<NR, NC> matrix_t;
@@ -20,20 +22,3 @@ typedef Matrix<PAD(PAD(NR)), PAD(PAD(NC))> padded_matrix_t;
 
 #endif /* matrix_types_hpp */
 
-// 256:
-// 6.7086
-//
-// 512:
-// 3.57792
-//
-// 1024:
-// 4.12837
-//
-// 2048:
-// 3.83348
-//
-// 8192:
-// 4.10861
-//
-// 15 pixels per lattice const:
-// 4.71698

@@ -21,14 +21,14 @@
 
 // int argc, const char* argv[]
 int main() {
-   double external_potential_amplitude = 0.009;
-   const std::string directory_string = "/Users/Rachel/Documents/graphenePFC/test/fix0";
+   double external_potential_amplitude = 0.001;
+   const std::string directory_string = "/Users/Rachel/Documents/graphene/test/ab";
 
    const double write_at_these_times[] = {0., 100., 500., 1000., 1500., 2000., 2500., 3000., 3500., 4000., 5000., 6000., 7000., 8000., 9000., 10000.};
    const double max_time = 10000.;
    const double chemical_potential = 0.0;
-   const double max_timestep = 1.;
-   const double angle = 60.0;
+   const double max_timestep = 0.01;
+   const double angle = 0.0;
 
    
    int number_threads = omp_get_max_threads();
@@ -116,10 +116,7 @@ int main() {
                                        FFTW_ESTIMATE);
    
    // make matrices for the three terms of dF/dN, and dN/dt
-   matrix_t dfdn_1;
-   matrix_t dfdn_2;
-   matrix_t dfdn_3;
-   matrix_t dndt;
+   matrix_t dfdn_1, dfdn_2, dfdn_3, dndt, energy1, energy2, energy3, energy4, energy5, energy;
    
    // create time variable
    double time = 0.;
@@ -287,26 +284,31 @@ int main() {
       three_pt_secs = ((stop.tv_sec  - start.tv_sec) * 1000000u +
             stop.tv_usec - start.tv_usec) / 1.e6;
    
+      // calculate energy
       gettimeofday(&start, NULL);
-      matrix_t energy;
       double total_energy = 0.;
-      #pragma omp parallel for reduction(+ : total_energy)
+#pragma omp parallel for reduction(+ : total_energy)
       for (int ir = 0; ir < NR; ++ir) {
          for (int ic = 0; ic < NC; ++ic) {
             double local_n = n_mat.get(ir, ic);
             double local_n_squared = local_n * local_n;
             double one_pt_corrs = local_n_squared / 2. -
-                            (local_n_squared * local_n) / 6. +
-                            (local_n_squared * local_n_squared) / 12.;
-            double two_pt_corrs =
-          -0.5 * local_n * rescale_fft * two_pt_correlations[0][ir * NC + ic];
+            (local_n_squared * local_n) / 6. +
+            (local_n_squared * local_n_squared) / 12.;
+            double two_pt_corrs = -0.5 * local_n * rescale_fft * two_pt_correlations[ir * NC + ic][0];
             double three_pt_corrs = -1. * onethird * local_n *
-                              (pow(rescale_fft * cs1_n[ir * NC + ic][0], 2) +
-                               pow(rescale_fft * cs2_n[ir * NC + ic][0], 2));
-            energy.set(ir, ic, -1. * (one_pt_corrs + two_pt_corrs + three_pt_corrs -
-                             chemical_potential * local_n));
-            total_energy += -1. * (one_pt_corrs + two_pt_corrs + three_pt_corrs -
-                      chemical_potential * local_n);
+            (pow(rescale_fft * cs1_n[ir * NC + ic][0], 2) +
+             pow(rescale_fft * cs2_n[ir * NC + ic][0], 2));
+            energy1.set(ir, ic, one_pt_corrs);
+            energy2.set(ir, ic, two_pt_corrs);
+            energy3.set(ir, ic, three_pt_corrs);
+            energy4.set(ir, ic, local_n * applied_potential.get(ir, ic) );
+            energy5.set(ir, ic, local_n);
+            energy.set(ir, ic, one_pt_corrs + two_pt_corrs + three_pt_corrs +
+                       (chemical_potential * local_n) + (local_n * applied_potential.get(ir, ic)));
+            total_energy += one_pt_corrs + two_pt_corrs + three_pt_corrs +
+            (chemical_potential * local_n) + (local_n * applied_potential.get(ir, ic));
+            // total_energy += three_pt_corrs;
          }
       }
       energy_list.push_back(total_energy);
@@ -315,9 +317,30 @@ int main() {
       // write the output files, if necessary
       if (time >= write_at_these_times[print_counter] && old_time <= write_at_these_times[print_counter]) {
          WriteMatrix(time, total_energy, directory_string, n_mat);
-         WriteMatrix(time, total_energy, directory_string_fix, applied_potential * -3.0);
-         AnalyzeCoupledBurger(n_mat, applied_potential * -3.0, a0, time, directory_string, directory_string_fix);
-         WriteMatrix(time, iteration, directory_string_energy_matrix, energy);
+         WriteMatrix(time, total_energy, directory_string_fix, applied_potential * -1.0);
+         AnalyzeCoupledBurger(n_mat, applied_potential * -1.0, r0, time, directory_string, directory_string_fix);
+         WriteMatrix(time, iteration, directory_string_energy_matrix + "0", energy);
+         WriteMatrix(time, iteration, directory_string_energy_matrix + "1", energy1);
+         WriteMatrix(time, iteration, directory_string_energy_matrix + "2", energy2);
+         WriteMatrix(time, iteration, directory_string_energy_matrix + "3", energy3);
+         WriteMatrix(time, iteration, directory_string_energy_matrix + "4", energy4);
+         WriteMatrix(time, iteration, directory_string_energy_matrix + "5", energy5);
+         // write the total energy vector to a file
+         std::string file_str = directory_string_energy_list + ".txt";
+         const char* file_char = file_str.c_str();
+         std::ofstream file(file_char);
+         if (file.is_open()) {
+            file << "{";
+            for (int i = 0; i < energy_list.size(); ++i) {
+               file << " {" << energy_list.at(i) << ", " << time_list.at(i) << "}, ";
+            }
+            file << " {} }";
+            file.close();
+            std::cout << "done writing " << file_char << std::endl;
+         } else {
+            std::cout << "Unable to open file" << std::endl;
+         }
+         // done writing energy list
          print_counter += 1;
       }
       
@@ -385,8 +408,14 @@ int main() {
    
    // write the final timestep to a file
    WriteMatrix(time, iteration, directory_string, n_mat);
-   WriteMatrix(time, iteration, directory_string_fix, applied_potential * -3.0);
-   AnalyzeCoupledBurger(n_mat, applied_potential * -3.0, a0, time, directory_string, directory_string_fix);
+   WriteMatrix(time, iteration, directory_string_fix, applied_potential * -1.0);
+   AnalyzeCoupledBurger(n_mat, applied_potential * -1.0, r0, time, directory_string, directory_string_fix);
+   WriteMatrix(time, iteration, directory_string_energy_matrix + "0", energy);
+   WriteMatrix(time, iteration, directory_string_energy_matrix + "1", energy1);
+   WriteMatrix(time, iteration, directory_string_energy_matrix + "2", energy2);
+   WriteMatrix(time, iteration, directory_string_energy_matrix + "3", energy3);
+   WriteMatrix(time, iteration, directory_string_energy_matrix + "4", energy4);
+   WriteMatrix(time, iteration, directory_string_energy_matrix + "5", energy5);
    
    // write the total energy vector to a file
    std::string file_str = directory_string_energy_list + ".txt";

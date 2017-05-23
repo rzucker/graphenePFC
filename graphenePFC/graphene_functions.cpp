@@ -25,9 +25,9 @@ void InitialCircle(matrix_t* n_mat, const double a0) {
    // if the holeis over a hole: AA stacking
    // if the the hole is over a down site: AC stacking
    // if the hole is over an up site: AB stacking
-   double shift_ac = a0 / 2.;
-   matrix_t perfect_ab(a0, 3.0, 2.0 * shift_ac, 1.0, 0.0);
-   matrix_t perfect_ac(a0, 3.0, shift_ac, 1.0, 0.0);
+   double bond_length = a0 / sqrt(3.);
+   matrix_t perfect_ab(a0, 3.0, 2.0 * bond_length, 1.0, 0.0);
+   matrix_t perfect_ac(a0, 3.0, bond_length, 1.0, 0.0);
    
    // define circular zone
    const double domain_center[2] = {NR / 2., NC / 2.};
@@ -53,9 +53,9 @@ void InitialCircle(matrix_t* n_mat, const double a0) {
 void InitialShallowStripes(matrix_t* n_mat, const double a0) {
 
    srand(0);
-   double shift_ac = a0 / 2.;
-   matrix_t perfect_ab(a0, 3.0, 2.0 * shift_ac, 1.0, 0.0);
-   matrix_t perfect_ac(a0, 3.0, shift_ac, 1.0, 0.0);
+   double bond_length = a0 / sqrt(3.);
+   matrix_t perfect_ab(a0, 3.0, 2.0 * bond_length, 1.0, 0.0);
+   matrix_t perfect_ac(a0, 3.0, bond_length, 1.0, 0.0);
    
    double intercepts [] = {0.122205, 0.127795, 0.372205, 0.377795, 0.622205, 0.627795, \
 0.872205, 0.877795, 1.1222, 1.1278, 1.3722, 1.3778}; // corrected, width = 0.005
@@ -99,9 +99,9 @@ void InitialShallowStripes(matrix_t* n_mat, const double a0) {
 void InitialSteepStripes(matrix_t* n_mat, const double a0) {
    
    srand(0);
-   double shift_ac = a0 / 2.;
-   matrix_t perfect_ab(a0, 3.0, 2.0 * shift_ac, 1.0, 0.0);
-   matrix_t perfect_ac(a0, 3.0, shift_ac, 1.0, 0.0);
+   double bond_length = a0 / sqrt(3.);
+   matrix_t perfect_ab(a0, 3.0, 2.0 * bond_length, 1.0, 0.0);
+   matrix_t perfect_ac(a0, 3.0, bond_length, 1.0, 0.0);
    
    double intercepts [] = {0.24441, 0.25559, 0.74441, 0.75559, 1.24441, 1.25559, 1.74441, \
 1.75559, 2.24441, 2.25559, 2.74441, 2.75559}; // corrected, width = 0.005
@@ -144,9 +144,9 @@ void InitialSteepStripes(matrix_t* n_mat, const double a0) {
 void InitialDiagonalStripes(matrix_t* n_mat, const double a0) {
    
    srand(0);
-   double shift_ac = a0 / 2.;
-   matrix_t perfect_ab(a0, 3.0, 2.0 * shift_ac, 1.0, 0.0);
-   matrix_t perfect_ac(a0, 3.0, shift_ac, 1.0, 0.0);
+   double bond_length = a0 / sqrt(3.);
+   matrix_t perfect_ab(a0, 3.0, 2.0 * bond_length, 1.0, 0.0);
+   matrix_t perfect_ac(a0, 3.0, bond_length, 1.0, 0.0);
    
    double intercepts [] = {0.246464, 0.253536, 0.746464, 0.753536, 1.24646, 1.25354, 1.74646, \
 1.75354}; // corrected, width = 0.005
@@ -181,9 +181,9 @@ void InitialDiagonalStripes(matrix_t* n_mat, const double a0) {
 void InitialVerticalStripes(matrix_t* n_mat, const double a0) {
    
    srand(0);
-   double shift_ac = a0 / 2.;
-   matrix_t perfect_ab(a0, 3.0, 2.0 * shift_ac, 1.0, 0.0);
-   matrix_t perfect_ac(a0, 3.0, shift_ac, 1.0, 0.0);
+   double bond_length = a0 / sqrt(3.);
+   matrix_t perfect_ab(a0, 3.0, 2.0 * bond_length, 1.0, 0.0);
+   matrix_t perfect_ac(a0, 3.0, bond_length, 1.0, 0.0);
    
    double intercepts [] = {0.2475, 0.2525, 0.7475, 0.7525};
    
@@ -209,9 +209,9 @@ void InitialVerticalStripes(matrix_t* n_mat, const double a0) {
 void InitialHorizontalStripes(matrix_t* n_mat, const double a0) {
    
    srand(0);
-   double shift_ac = a0 / 2.;
-   matrix_t perfect_ab(a0, 3.0, 2.0 * shift_ac, 1.0, 0.0);
-   matrix_t perfect_ac(a0, 3.0, shift_ac, 1.0, 0.0);
+   double bond_length = a0 / sqrt(3.);
+   matrix_t perfect_ab(a0, 3.0, 2.0 * bond_length, 1.0, 0.0);
+   matrix_t perfect_ac(a0, 3.0, bond_length, 1.0, 0.0);
    
    double intercepts [] = {0.2475, 0.2525, 0.7475, 0.7525};
    
@@ -237,8 +237,8 @@ void InitialHorizontalStripes(matrix_t* n_mat, const double a0) {
 void InitialSmoothStripes(matrix_t* n_mat, const double a0, const double degrees) {
    
    // define helper numbers
-   double const shift_ac = a0 / 2.;
-   double potential_shift = 2.0 * shift_ac; // start with AB
+   double const bond_length = a0 / sqrt(3.);
+   double potential_shift = 2.0 * bond_length; // start with AB
    double const intercepts [] = {0.2, 0.3, 0.7, 0.8};
    
    // repeated from matrix class constructor
@@ -261,22 +261,22 @@ void InitialSmoothStripes(matrix_t* n_mat, const double a0, const double degrees
          double ir_rot = ir * cos(degrees * PI / 180.) + ic * sin(degrees * PI / 180.);
          
          if (ir < intercepts[0] * NR) {
-            potential_shift = 2.0 * shift_ac;
+            potential_shift = 2.0 * bond_length;
          } else if (ir < intercepts[1] * NR) {
-            potential_shift = (2.0 * shift_ac) - shift_ac * (ir - (NR * intercepts[0])) / (NR * (intercepts[1] - intercepts[0]));
+            potential_shift = (2.0 * bond_length) - bond_length * (ir - (NR * intercepts[0])) / (NR * (intercepts[1] - intercepts[0]));
          } else if (ir < intercepts[2] * NR) {
-            potential_shift = shift_ac;
+            potential_shift = bond_length;
          } else if (ir < intercepts[3] * NR) {
-            potential_shift = shift_ac + shift_ac * (ir - (NR * intercepts[2])) / (NR * (intercepts[3] - intercepts[2]));
+            potential_shift = bond_length + bond_length * (ir - (NR * intercepts[2])) / (NR * (intercepts[3] - intercepts[2]));
          } else {
-            potential_shift = 2.0 * shift_ac;
+            potential_shift = 2.0 * bond_length;
          }
          
          for (int i = 0; i < 3; ++i) {
             potential_function_terms[i] =
             c_max[i] -
             (c_max[i] - c_min[i]) * (2. / 9.) *
-            (3. - (2. * cos(2 * PI * ic_rot / zigzag_unit_cell) *
+            (3. - (2. * cos(2 * PI * (ic_rot) / zigzag_unit_cell) *
                    cos(2. * PI * (ir_rot - potential_shift) /
                        (sqrt(3.) * zigzag_unit_cell)) +
                    cos(4. * PI * (ir_rot - potential_shift) /
@@ -301,9 +301,9 @@ void InitialSmoothStripes(matrix_t* n_mat, const double a0, const double degrees
 void InitialHorizontalDoubleStripes(matrix_t* n_mat, const double a0) {
    
    srand(0);
-   double shift_ac = a0 / 2.;
-   matrix_t perfect_ab(a0, 3.0, 2.0 * shift_ac, 1.0, 0.0);
-   matrix_t perfect_ac(a0, 3.0, shift_ac, 1.0, 0.0);
+   double bond_length = a0 / sqrt(3.);
+   matrix_t perfect_ab(a0, 3.0, 2.0 * bond_length, 1.0, 0.0);
+   matrix_t perfect_ac(a0, 3.0, bond_length, 1.0, 0.0);
    
    #pragma omp parallel for
       for (int ir = 0; ir < NR; ++ir) {
@@ -334,10 +334,10 @@ void InitialHorizontalDoubleStripes(matrix_t* n_mat, const double a0) {
 
 void InitialPerfect(matrix_t* n_mat, const double a0) {
    
-   double shift_ac = a0 / 2.;
-   matrix_t perfect_aa(a0, 3.0, 0.0, 1.0, 0.0);
-   matrix_t perfect_ab(a0, 3.0, 2.0 * shift_ac, 1.0, 0.0);
-   matrix_t perfect_ac(a0, 3.0, shift_ac, 1.0, 0.0);
+   double bond_length = a0 / sqrt(3.);
+   matrix_t perfect_aa(a0, 0.1, 0.0, 1.0, 0.0);
+   matrix_t perfect_ab(a0, 0.1, 2.0 * bond_length, 1.0, 0.0);
+   matrix_t perfect_ac(a0, 0.1, bond_length, 1.0, 0.0);
 
    #pragma omp parallel for
    for (int ir = 0; ir < NR; ++ir) {

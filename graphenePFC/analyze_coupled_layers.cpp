@@ -15,15 +15,6 @@
 // NearestThreePoints returns the nearest_three_atoms in the vector possible_atoms
 // to the point central_atom
 
-struct PointAndColor {
-   Point atom;
-   std::array<double, 3> abc;
-   PointAndColor (Point position, std::array<double, 3> rgb) {
-      atom = position;
-      abc = rgb;
-   }
-};
-
 void NearestThreePoints(std::vector<Point>* nearest_three_atoms, const std::vector<Point>& possible_neighbors) {
    
    int length = (int) possible_neighbors.size(); // why do I need (int)? Shouldn't .size() be returning an int?

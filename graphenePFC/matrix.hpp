@@ -69,6 +69,8 @@ Matrix(double r0, double potential_amplitude, double potential_shift,
       const double c_max[] = {2.75075, 3.349208, 8258.11};
       const double c_min[] = {1.63093, 3.347616, 8184.70};
       const double zigzag_unit_cell = a0 * potential_stretch;
+      double sqrt3 = sqrt(3.);
+      double degToRad = PI / 180.;
       // this is Sqrt[3] times the bond length! zigzag_unit_cell = unit cell length in zigzag direction
       const double z_eq = 3.31;
       double min_potential = -68.7968;
@@ -80,16 +82,16 @@ Matrix(double r0, double potential_amplitude, double potential_shift,
             // ic = zigzag direction
             // ir = armchair direction
             for (int i = 0; i < 3; ++i) {
-               double ic_rot = ic * cos(degrees * PI / 180.) - ir * sin(degrees * PI / 180.);
-               double ir_rot = ir * cos(degrees * PI / 180.) + ic * sin(degrees * PI / 180.);
+               double ic_rot = ic * cos(degrees * degToRad) - ir * sin(degrees * degToRad);
+               double ir_rot = ir * cos(degrees * degToRad) + ic * sin(degrees * degToRad);
                potential_function_terms[i] =
                c_max[i] -
                (c_max[i] - c_min[i]) * (2. / 9.) *
-               (3. - (2. * cos(2 * PI * (ic_rot) / zigzag_unit_cell) *
+               (3. - (2. * cos(2. * PI * (ic_rot) / zigzag_unit_cell) *
                       cos(2. * PI * (ir_rot - potential_shift) /
-                          (sqrt(3.) * zigzag_unit_cell)) +
+                          (sqrt3 * zigzag_unit_cell)) +
                       cos(4. * PI * (ir_rot - potential_shift) /
-                          (sqrt(3.) * zigzag_unit_cell))));
+                          (sqrt3 * zigzag_unit_cell))));
             }
             _storage[ir * C + ic] =
             (potential_amplitude *

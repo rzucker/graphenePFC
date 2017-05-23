@@ -13,6 +13,15 @@
 #include "matrix_types.hpp"
 #include "postprocessing.hpp"
 
+struct PointAndColor {
+   Point atom;
+   std::array<double, 3> abc;
+   PointAndColor (Point position, std::array<double, 3> rgb) {
+      atom = position;
+      abc = rgb;
+   }
+};
+
 void NearestThreePoints(std::vector<Point>* nearest_three_atoms, const std::vector<Point>& possible_neighbors);
 
 bool IsItAnUpAtom(const std::vector<Point>& triangle);
