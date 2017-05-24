@@ -21,13 +21,13 @@
 
 // int argc, const char* argv[]
 int main() {
-   double external_potential_amplitude = 0.001;
+   double external_potential_amplitude = 0.000001;
    const std::string directory_string = "/Users/Rachel/Documents/graphene/test/ab";
 
-   const double write_at_these_times[] = {0., 100., 500., 1000., 1500., 2000., 2500., 3000., 3500., 4000., 5000., 6000., 7000., 8000., 9000., 10000.};
+   const double write_at_these_times[] = {0., 10., 50., 100., 250., 500., 750., 1000., 1500., 2000., 2500., 3000., 3500., 4000., 5000., 6000., 7000., 8000., 9000., 10000.};
    const double max_time = 10000.;
    const double chemical_potential = 0.0;
-   const double max_timestep = 0.01;
+   const double max_timestep = 0.001;
    const double angle = 0.0;
 
    
@@ -84,7 +84,7 @@ int main() {
    int fftw_init_threads();
    
    // allocate input 2d array to be FFT'd, will be overwritten by FFTW
-   fftw_complex *n_hat, *two_pt_correlations, *cs1_n, *cs2_n, *n_cs1_n, *n_cs2_n, *cs1_n_cs1_n, *cs2_n_cs2_n;
+   fftw_complex *n_hat, *two_pt_correlations, *cs1_n, *cs2_n, *n_cs1_n, *n_cs2_n, *cs1_n_cs1_n, *cs2_n_cs2_n, *f_hat, *f_real;
    n_hat = (fftw_complex*)fftw_malloc(sizeof(fftw_complex) * NR * NC);
    two_pt_correlations = (fftw_complex*)fftw_malloc(sizeof(fftw_complex) * NR * NC);
    cs1_n = (fftw_complex*)fftw_malloc(sizeof(fftw_complex) * NR * NC);
@@ -93,13 +93,15 @@ int main() {
    n_cs2_n = (fftw_complex*)fftw_malloc(sizeof(fftw_complex) * NR * NC);
    cs1_n_cs1_n = (fftw_complex*)fftw_malloc(sizeof(fftw_complex) * NR * NC);
    cs2_n_cs2_n = (fftw_complex*)fftw_malloc(sizeof(fftw_complex) * NR * NC);
+   f_hat = (fftw_complex*)fftw_malloc(sizeof(fftw_complex) * NR * NC);
+   f_real = (fftw_complex*)fftw_malloc(sizeof(fftw_complex) * NR * NC);
    
    // subsequent plans will be multithreaded
    fftw_plan_with_nthreads(number_threads);
    // create a FFT plan, size NR x NC, input, output destination, direction of
    // FFT, and let FFTW guess what the best method is (fastest option, rather than doing an exhaustive search)
    fftw_plan make_n_hat, make_two_pt_corrs, make_cs1_n, make_cs2_n, make_n_cs1_n, make_n_cs2_n,
-   make_cs1_n_cs1_n, make_cs2_n_cs2_n;
+   make_cs1_n_cs1_n, make_cs2_n_cs2_n, make_f_hat, make_f_real;
    make_n_hat =
    fftw_plan_dft_2d(NR, NC, n_hat, n_hat, FFTW_BACKWARD, FFTW_ESTIMATE);
    make_two_pt_corrs =
@@ -114,6 +116,10 @@ int main() {
                                        FFTW_ESTIMATE);
    make_cs2_n_cs2_n = fftw_plan_dft_2d(NR, NC, cs2_n_cs2_n, cs2_n_cs2_n, FFTW_FORWARD,
                                        FFTW_ESTIMATE);
+   make_f_hat =
+   fftw_plan_dft_2d(NR, NC, f_hat, f_hat, FFTW_BACKWARD, FFTW_ESTIMATE);
+   make_f_real =
+   fftw_plan_dft_2d(NR, NC, f_real, f_real, FFTW_FORWARD, FFTW_ESTIMATE);
    
    // make matrices for the three terms of dF/dN, and dN/dt
    matrix_t dfdn_1, dfdn_2, dfdn_3, dndt, energy1, energy2, energy3, energy4, energy5, energy;
@@ -278,8 +284,55 @@ int main() {
             dfdn_3.set(ir, ic, tmp);
          }
       }
-      
       // 3-point correlations complete
+      
+      // define change in matrix with time, dN/dt
+      /*
+      // NON-conserved dynamics
+      #pragma omp parallel for
+      for (int ir = 0; ir < NR; ++ir) {
+         for (int ic = 0; ic < NC; ++ic) {
+            double self_potential = -(dfdn_1.get(ir, ic) + dfdn_2.get(ir, ic) -
+                                      onethird * dfdn_3.get(ir, ic));
+            dndt.set(ir, ic, self_potential + chemical_potential + applied_potential.get(ir, ic));
+         }
+      }
+      // NON-conserved dynamics complete
+      */
+      // CONServed dynamics
+      #pragma omp parallel for
+      for (int ir = 0; ir < NR; ++ir) {
+         for (int ic = 0; ic < NC; ++ic) {
+            f_hat[ir * NC + ic][0] = dfdn_1.get(ir, ic) + dfdn_2.get(ir, ic) -
+                                      onethird * dfdn_3.get(ir, ic) +
+                                    chemical_potential + applied_potential.get(ir, ic);
+            f_hat[ir * NC + ic][1] = 0.0;
+         }
+      }
+      
+      fftw_execute(make_f_hat);
+      
+      // take 2 derivatives by multiplying by k^2, then swith to real space
+      #pragma omp parallel for
+      for (int ir = 0; ir < NR; ++ir) {
+         for (int ic = 0; ic < NC; ++ic) {
+            double tmp = minus_k_squared.get(ir, ic);
+            f_real[ir * NC + ic][0] = rescale_fft * f_hat[ir * NC + ic][0] * tmp;
+            f_real[ir * NC + ic][1] = rescale_fft * f_hat[ir * NC + ic][1] * tmp;
+         }
+      }
+      
+      fftw_execute(make_f_real);
+      
+      #pragma omp parallel for
+      for (int ir = 0; ir < NR; ++ir) {
+         for (int ic = 0; ic < NC; ++ic) {
+            double tmp = minus_k_squared.get(ir, ic);
+            dndt.set(ir, ic, rescale_fft * f_real[ir * NC + ic][0]);
+         }
+      }
+      // CONServed dynamics complete
+
       gettimeofday(&stop, NULL);
       three_pt_secs = ((stop.tv_sec  - start.tv_sec) * 1000000u +
             stop.tv_usec - start.tv_usec) / 1.e6;
@@ -348,18 +401,8 @@ int main() {
       conditional_secs = ((stop.tv_sec  - start.tv_sec) * 1000000u +
             stop.tv_usec - start.tv_usec) / 1.e6;
       
-      gettimeofday(&start, NULL);
-      // define change in matrix with time, dN/dt
-      #pragma omp parallel for
-      for (int ir = 0; ir < NR; ++ir) {
-         for (int ic = 0; ic < NC; ++ic) {
-            double self_potential = -(dfdn_1.get(ir, ic) + dfdn_2.get(ir, ic) -
-                                      onethird * dfdn_3.get(ir, ic));
-            dndt.set(ir, ic, self_potential + chemical_potential + applied_potential.get(ir, ic));
-         }
-      }
-      
       // find adaptive timestep dt
+      gettimeofday(&start, NULL);
       double dt = max_timestep / dndt.MaxAbsValue();
       // update n_mat, n_(i+1) = n_i + dt * d(n_i)/dt
       #pragma omp parallel for

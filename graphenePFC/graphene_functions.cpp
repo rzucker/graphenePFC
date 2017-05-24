@@ -335,9 +335,9 @@ void InitialHorizontalDoubleStripes(matrix_t* n_mat, const double a0) {
 void InitialPerfect(matrix_t* n_mat, const double a0) {
    
    double bond_length = a0 / sqrt(3.);
-   matrix_t perfect_aa(a0, 0.1, 0.0, 1.0, 0.0);
-   matrix_t perfect_ab(a0, 0.1, 2.0 * bond_length, 1.0, 0.0);
-   matrix_t perfect_ac(a0, 0.1, bond_length, 1.0, 0.0);
+   matrix_t perfect_aa(a0, 0.1, 0.0, 1.0, 0.3, 0.0);
+   matrix_t perfect_ab(a0, 0.1, 2.0 * bond_length, 1.0, 0.3, 0.0);
+   matrix_t perfect_ac(a0, 0.1, bond_length, 1.0, 0.3, 0.0);
 
    #pragma omp parallel for
    for (int ir = 0; ir < NR; ++ir) {

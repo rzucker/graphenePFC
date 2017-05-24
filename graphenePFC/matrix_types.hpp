@@ -15,6 +15,7 @@
 #define NC 280
 // C = zigzag direction
 #define SCALEUP 11.547
+// this is the bond length, in pixels
 #define PAD(x) (x+20)
 
 typedef Matrix<NR, NC> matrix_t;
