@@ -113,11 +113,11 @@ void PotentialSites(const double a0, std::vector<Point>* hole, std::vector<Point
 double NearestPointDist(const Point pt,
                         const std::vector<Point>& candidates) {
    
-   double minimum_distance = sqrt((pt.x - candidates[0].x) * (pt.x - candidates[0].x) +
-                                 (pt.y - candidates[0].y) * (pt.y - candidates[0].y));
-   for (int i = 0; i < candidates.size(); ++i) {
-      double ith_distance = sqrt((pt.x - candidates[i].x) * (pt.x - candidates[i].x) +
-                        (pt.y - candidates[i].y) * (pt.y - candidates[i].y));
+   double minimum_distance = sqrt((pt.x - candidates.at(0).x) * (pt.x - candidates.at(0).x) +
+                                 (pt.y - candidates.at(0).y) * (pt.y - candidates.at(0).y));
+   for (int i = 1; i < candidates.size(); ++i) {
+      double ith_distance = sqrt((pt.x - candidates.at(i).x) * (pt.x - candidates.at(i).x) +
+                        (pt.y - candidates.at(i).y) * (pt.y - candidates.at(i).y));
       if (ith_distance < minimum_distance) {
          minimum_distance = ith_distance;
       }

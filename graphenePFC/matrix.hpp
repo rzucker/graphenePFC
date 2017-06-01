@@ -117,33 +117,47 @@ Matrix(double r0, double potential_amplitude, double potential_shift,
      //_storage[ir * C + ic] = value;
    }
 
-   double get(int ir, int ic) const {
-     try {
+#include <exception>
+
+double get(int ir, int ic) const {
+   if (ir < 0) {
+      std::cout << "ir < 0" << std::endl;
+   }
+   if (ic < 0) {
+      std::cout << "ic < 0" << std::endl;
+   }
+   if (ir > R) {
+      std::cout << "ir > R" << ir << R << std::endl;
+   }
+   if (ic > C) {
+      std::cout << "ic > C" << ic << C << std::endl;
+   }
+   try {
       double r = _storage.at(ir * C + ic);
       return r;
-     }
-     catch (std::out_of_range e) {
-      std::cout << "Out of Range error in get(" << ir << ", " << ic << ")" << std::endl;
+   } catch (std::out_of_range e) {
+      std::cout << "Out of Range error in get(" << ir << ", " << ic << ")"
+                << std::endl;
 
-	  void *array[10];
-	  size_t size;
-	  char **strings;
-	  size_t i;
+      void* array[10];
+      size_t size;
+      char** strings;
+      size_t i;
 
-	  size = backtrace (array, 10);
-	  strings = backtrace_symbols (array, size);
+      size = backtrace(array, 10);
+      strings = backtrace_symbols(array, size);
 
-	  printf ("Obtained %zd stack frames.\n", size);
+      printf("Obtained %zd stack frames.\n", size);
 
-	  for (i = 0; i < size; i++)
-	     printf ("%s\n", strings[i]);
+      for (i = 0; i < size; i++)
+         printf("%s\n", strings[i]);
 
-	  free (strings);
-       exit(1);
-     }
-     //return _storage[ir * C + ic];
+      free(strings);
+      exit(1);
    }
-
+   // return _storage[ir * C + ic];
+}
+   
    void WriteToFile(const char* file_name, const char* file_header) const {
       std::ofstream file(file_name);
       if (file.is_open()) {

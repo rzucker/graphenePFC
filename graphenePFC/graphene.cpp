@@ -21,13 +21,13 @@
 
 // int argc, const char* argv[]
 int main() {
-   double external_potential_amplitude = 0.000001;
-   const std::string directory_string = "/Users/Rachel/Documents/graphene/test/ab";
+   double external_potential_amplitude = 0.01;
+   const std::string directory_string = "/Users/Rachel/Documents/graphene/test/ab2";
 
-   const double write_at_these_times[] = {0., 10., 50., 100., 250., 500., 750., 1000., 1500., 2000., 2500., 3000., 3500., 4000., 5000., 6000., 7000., 8000., 9000., 10000.};
+   const double write_at_these_times[] = {0., 1., 10., 50., 100., 250., 500., 750., 1000., 1500., 2000., 2500., 3000., 3500., 4000., 5000., 6000., 7000., 8000., 9000., 10000.};
    const double max_time = 10000.;
    const double chemical_potential = 0.0;
-   const double max_timestep = 0.001;
+   const double max_timestep = 0.00001;
    const double angle = 0.0;
 
    
@@ -55,7 +55,7 @@ int main() {
    
    gettimeofday(&start, NULL);
    // define appled potential, shift chemical_potentialst be zero for inital condition and analyze functions to work properly
-   matrix_t applied_potential(a0, -1.0 * external_potential_amplitude, 0.0,
+   matrix_t applied_potential(a0, 0.0 * external_potential_amplitude, 0.0,
                               1.0, 0.0, angle);
    
    // make initial condition, all IC functions take the same arguments
@@ -150,11 +150,12 @@ int main() {
          for (int ic = 0; ic < NC; ++ic) {
             double tmp = n_mat.get(ir, ic);
             dfdn_1.set(ir, ic, tmp - (0.5 * tmp * tmp) +
-                       (tmp * tmp * tmp * onethird));
+                       (tmp * tmp * tmp * onethird) + chemical_potential);
+            //  + applied_potential.get(ir, ic))
          }
       }
-      
       // 1-point correlations complete
+      
       gettimeofday(&stop, NULL);
       one_pt_secs = ((stop.tv_sec  - start.tv_sec) * 1000000u +
             stop.tv_usec - start.tv_usec) / 1.e6;
@@ -182,6 +183,7 @@ int main() {
          }
       }
       
+      // IFFT[c2 n_hat]
       fftw_execute(make_two_pt_corrs);
       
       #pragma omp parallel for
@@ -198,7 +200,7 @@ int main() {
       
       // begin 3-point correlation terms, dfdn_3
       gettimeofday(&start, NULL);
-      // define IFFT[ Cs1 nhat]
+      // define [Cs1 nhat]
       // don't forget: (a + b i)(d i) = (-b d) + (a d) i
       #pragma omp parallel for
       for (int ir = 0; ir < NR; ++ir) {
@@ -210,7 +212,7 @@ int main() {
          }
       }
       
-      // define IFFT[ Cs2 nhat]
+      // define [Cs2 nhat]
       #pragma omp parallel for
       for (int ir = 0; ir < NR; ++ir) {
          for (int ic = 0; ic < NC; ++ic) {
@@ -221,27 +223,31 @@ int main() {
          }
       }
       
+      // compute IFFT[Cs1 nhat] & IFFT[Cs2 nhat]
       fftw_execute(make_cs1_n);
       fftw_execute(make_cs2_n);
       
-      // define FFT[ n IFFT[Cs1 nhat]]
-      // define FFT[ n IFFT[Cs2 nhat]]
+      // define [n IFFT[Cs1 nhat]]
+      // define [n IFFT[Cs2 nhat]]
       // don't forget: (a)(c + d i) = (a c) + (a d) i
       #pragma omp parallel for
       for (int ir = 0; ir < NR; ++ir) {
          for (int ic = 0; ic < NC; ++ic) {
             double tmp = n_mat.get(ir, ic);
             n_cs1_n[ir * NC + ic][0] = rescale_fft * cs1_n[ir * NC + ic][0] * tmp;
-            n_cs1_n[ir * NC + ic][1] = rescale_fft * cs1_n[ir * NC + ic][1] * tmp;
+            n_cs1_n[ir * NC + ic][1] = 0.0;
+            // rescale_fft * cs1_n[ir * NC + ic][1] * tmp;
             n_cs2_n[ir * NC + ic][0] = rescale_fft * cs2_n[ir * NC + ic][0] * tmp;
-            n_cs2_n[ir * NC + ic][1] = rescale_fft * cs2_n[ir * NC + ic][1] * tmp;
+            n_cs2_n[ir * NC + ic][1] = 0.0;
+            // rescale_fft * cs2_n[ir * NC + ic][1] * tmp;
          }
       }
       
+      // FFT[n IFFT[Cs1 nhat]] & FFT[n IFFT[Cs2 nhat]]
       fftw_execute(make_n_cs1_n);
       fftw_execute(make_n_cs2_n);
       
-      // define IFFT[ Cs1 FFT[ n IFFT[ Cs1 nhat]]]
+      // define [Cs1 FFT[n IFFT[ Cs1 nhat]]]
       // don'tforget: (a + b i)(d i) = (-b d) + (a d) i
       #pragma omp parallel for
       for (int ir = 0; ir < NR; ++ir) {
@@ -254,7 +260,7 @@ int main() {
          }
       }
       
-      // define IFFT[ Cs2 FFT[ n IFFT[ Cs2 nhat]]]
+      // define [Cs2 FFT[n IFFT[ Cs2 nhat]]]
       #pragma omp parallel for
       for (int ir = 0; ir < NR; ++ir) {
          for (int ic = 0; ic < NC; ++ic) {
@@ -267,6 +273,7 @@ int main() {
          }
       }
       
+      // IFFT[Cs1 FFT[ n IFFT[ Cs1 nhat]]] & IFFT[Cs2 FFT[ n IFFT[ Cs2 nhat]]]
       fftw_execute(make_cs1_n_cs1_n);
       fftw_execute(make_cs2_n_cs2_n);
       
@@ -274,38 +281,38 @@ int main() {
       #pragma omp parallel for
       for (int ir = 0; ir < NR; ++ir) {
          for (int ic = 0; ic < NC; ++ic) {
-            double tmp1r = (cs1_n[ir * NC + ic][0] * cs1_n[ir * NC + ic][0]) -
-            (cs1_n[ir * NC + ic][1] * cs1_n[ir * NC + ic][1]);
-            double tmp2r = (cs2_n[ir * NC + ic][0] * cs2_n[ir * NC + ic][0]) -
-            (cs2_n[ir * NC + ic][1] * cs2_n[ir * NC + ic][1]);
+            double tmp1r = (cs1_n[ir * NC + ic][0] * cs1_n[ir * NC + ic][0]);
+            // - (cs1_n[ir * NC + ic][1] * cs1_n[ir * NC + ic][1]);
+            double tmp2r = (cs2_n[ir * NC + ic][0] * cs2_n[ir * NC + ic][0]);
+            // - (cs2_n[ir * NC + ic][1] * cs2_n[ir * NC + ic][1]);
             double tmp = rescale_fft * rescale_fft * (tmp1r + tmp2r) -
             2.0 * rescale_fft * cs1_n_cs1_n[ir * NC + ic][0] -
             2.0 * rescale_fft * cs2_n_cs2_n[ir * NC + ic][0];
-            dfdn_3.set(ir, ic, tmp);
+            dfdn_3.set(ir, ic, -1.0 * onethird * tmp);
          }
       }
       // 3-point correlations complete
       
       // define change in matrix with time, dN/dt
+      
       /*
       // NON-conserved dynamics
       #pragma omp parallel for
       for (int ir = 0; ir < NR; ++ir) {
          for (int ic = 0; ic < NC; ++ic) {
-            double self_potential = -(dfdn_1.get(ir, ic) + dfdn_2.get(ir, ic) -
-                                      onethird * dfdn_3.get(ir, ic));
-            dndt.set(ir, ic, self_potential + chemical_potential + applied_potential.get(ir, ic));
+            double self_potential = dfdn_1.get(ir, ic) + dfdn_2.get(ir, ic) + dfdn_3.get(ir, ic);
+            dndt.set(ir, ic, -1.0 * self_potential);
          }
       }
       // NON-conserved dynamics complete
       */
+      
       // CONServed dynamics
       #pragma omp parallel for
       for (int ir = 0; ir < NR; ++ir) {
          for (int ic = 0; ic < NC; ++ic) {
-            f_hat[ir * NC + ic][0] = dfdn_1.get(ir, ic) + dfdn_2.get(ir, ic) -
-                                      onethird * dfdn_3.get(ir, ic) +
-                                    chemical_potential + applied_potential.get(ir, ic);
+            f_hat[ir * NC + ic][0] = dfdn_1.get(ir, ic) + dfdn_2.get(ir, ic) + dfdn_3.get(ir, ic);
+            // + chemical _potential + applied_potential.get(ir, ic); moved to 1-pt term!
             f_hat[ir * NC + ic][1] = 0.0;
          }
       }
@@ -327,12 +334,12 @@ int main() {
       #pragma omp parallel for
       for (int ir = 0; ir < NR; ++ir) {
          for (int ic = 0; ic < NC; ++ic) {
-            double tmp = minus_k_squared.get(ir, ic);
             dndt.set(ir, ic, rescale_fft * f_real[ir * NC + ic][0]);
          }
       }
       // CONServed dynamics complete
-
+      
+      
       gettimeofday(&stop, NULL);
       three_pt_secs = ((stop.tv_sec  - start.tv_sec) * 1000000u +
             stop.tv_usec - start.tv_usec) / 1.e6;
@@ -340,28 +347,30 @@ int main() {
       // calculate energy
       gettimeofday(&start, NULL);
       double total_energy = 0.;
-#pragma omp parallel for reduction(+ : total_energy)
+      #pragma omp parallel for reduction(+ : total_energy)
       for (int ir = 0; ir < NR; ++ir) {
          for (int ic = 0; ic < NC; ++ic) {
             double local_n = n_mat.get(ir, ic);
             double local_n_squared = local_n * local_n;
+            
             double one_pt_corrs = local_n_squared / 2. -
             (local_n_squared * local_n) / 6. +
-            (local_n_squared * local_n_squared) / 12.;
+            (local_n_squared * local_n_squared) / 12. +
+            local_n * applied_potential.get(ir, ic) +
+            local_n * chemical_potential;
+            
             double two_pt_corrs = -0.5 * local_n * rescale_fft * two_pt_correlations[ir * NC + ic][0];
+            
             double three_pt_corrs = -1. * onethird * local_n *
             (pow(rescale_fft * cs1_n[ir * NC + ic][0], 2) +
              pow(rescale_fft * cs2_n[ir * NC + ic][0], 2));
+            
             energy1.set(ir, ic, one_pt_corrs);
             energy2.set(ir, ic, two_pt_corrs);
             energy3.set(ir, ic, three_pt_corrs);
-            energy4.set(ir, ic, local_n * applied_potential.get(ir, ic) );
-            energy5.set(ir, ic, local_n);
-            energy.set(ir, ic, one_pt_corrs + two_pt_corrs + three_pt_corrs +
-                       (chemical_potential * local_n) + (local_n * applied_potential.get(ir, ic)));
-            total_energy += one_pt_corrs + two_pt_corrs + three_pt_corrs +
-            (chemical_potential * local_n) + (local_n * applied_potential.get(ir, ic));
-            // total_energy += three_pt_corrs;
+
+            energy.set(ir, ic, one_pt_corrs + two_pt_corrs + three_pt_corrs);
+            total_energy += one_pt_corrs + two_pt_corrs + three_pt_corrs;
          }
       }
       energy_list.push_back(total_energy);
@@ -370,14 +379,12 @@ int main() {
       // write the output files, if necessary
       if (time >= write_at_these_times[print_counter] && old_time <= write_at_these_times[print_counter]) {
          WriteMatrix(time, total_energy, directory_string, n_mat);
-         WriteMatrix(time, total_energy, directory_string_fix, applied_potential * -1.0);
-         AnalyzeCoupledBurger(n_mat, applied_potential * -1.0, r0, time, directory_string, directory_string_fix);
+         WriteMatrix(time, total_energy, directory_string_fix, applied_potential);
+         AnalyzeCoupledBurger(n_mat, applied_potential, r0, time, directory_string, directory_string_fix);
          WriteMatrix(time, iteration, directory_string_energy_matrix + "0", energy);
          WriteMatrix(time, iteration, directory_string_energy_matrix + "1", energy1);
          WriteMatrix(time, iteration, directory_string_energy_matrix + "2", energy2);
          WriteMatrix(time, iteration, directory_string_energy_matrix + "3", energy3);
-         WriteMatrix(time, iteration, directory_string_energy_matrix + "4", energy4);
-         WriteMatrix(time, iteration, directory_string_energy_matrix + "5", energy5);
          // write the total energy vector to a file
          std::string file_str = directory_string_energy_list + ".txt";
          const char* file_char = file_str.c_str();
@@ -451,14 +458,12 @@ int main() {
    
    // write the final timestep to a file
    WriteMatrix(time, iteration, directory_string, n_mat);
-   WriteMatrix(time, iteration, directory_string_fix, applied_potential * -1.0);
-   AnalyzeCoupledBurger(n_mat, applied_potential * -1.0, r0, time, directory_string, directory_string_fix);
+   WriteMatrix(time, iteration, directory_string_fix, applied_potential);
+   AnalyzeCoupledBurger(n_mat, applied_potential, r0, time, directory_string, directory_string_fix);
    WriteMatrix(time, iteration, directory_string_energy_matrix + "0", energy);
    WriteMatrix(time, iteration, directory_string_energy_matrix + "1", energy1);
    WriteMatrix(time, iteration, directory_string_energy_matrix + "2", energy2);
    WriteMatrix(time, iteration, directory_string_energy_matrix + "3", energy3);
-   WriteMatrix(time, iteration, directory_string_energy_matrix + "4", energy4);
-   WriteMatrix(time, iteration, directory_string_energy_matrix + "5", energy5);
    
    // write the total energy vector to a file
    std::string file_str = directory_string_energy_list + ".txt";

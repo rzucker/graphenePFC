@@ -10,11 +10,11 @@
 #define matrix_types_hpp
 
 #include "matrix.hpp"
-#define NR 208
+#define NR 295
 // R = armchair direction
-#define NC 280
+#define NC 395
 // C = zigzag direction
-#define SCALEUP 11.547
+#define SCALEUP 16.0
 // this is the bond length, in pixels
 #define PAD(x) (x+20)
 

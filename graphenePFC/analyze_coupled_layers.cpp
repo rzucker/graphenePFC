@@ -48,7 +48,7 @@ bool IsItAnUpAtom(const std::vector<Point>& triangle) {
 
 void FindNeighbors(const int row, const int col, std::vector<Point>* possible_neighbors, const padded_matrix_t& atom_sites, const double a0) {
    // find all atoms within a circle of fixed radius of the central atom
-   double range = a0 * 2.;
+   double range = a0 * 1.;
    for (int i = floor(-range); i < ceil(range); ++i) {
       for (int j = floor(-range); j < ceil(range); ++j) {
          if ( sqrt( i * i + j * j) <= range ) {
